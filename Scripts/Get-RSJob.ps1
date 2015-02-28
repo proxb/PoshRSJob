@@ -1,5 +1,5 @@
-﻿Function Get-AsyncJob {
-    [OutputType('PSAsync.PowerShell.AsyncJob')]
+Function Get-RSJob {
+    [OutputType('PoshRS.PowerShell.RSJob')]
     [cmdletbinding(
         DefaultParameterSetName='All'
     )]
@@ -79,10 +79,22 @@
                 }    
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())   
             }
-            'All' {$ScriptBlock=$Null}
+            'All' {
+                If ($PSBoundParameters['State']) {
+                    $HasWhere = $True
+                    [void]$StringBuilder.Append("`$_.State -eq `"$State`"")
+                    $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString()) 
+                } Else {                
+                    $ScriptBlock=$Null
+                }
+            }
         }
         If ($PSCmdlet.ParameterSetName -eq 'All') {
-            $jobs
+            If ($HasWhere) {
+                $Jobs | Where $ScriptBlock
+            } Else {
+                $jobs
+            }
         } Else {
             Write-Debug "Items: $Items"
             Write-Debug "WhereString: $($StringBuilder.ToString())" 

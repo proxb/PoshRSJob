@@ -1,4 +1,4 @@
-﻿Function Remove-AsyncJob {
+Function Remove-RSJob {
     [cmdletbinding(
         DefaultParameterSetName='Job',
         SupportsShouldProcess = $True
@@ -14,7 +14,7 @@
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PSAsync.PowerShell.AsyncJob[]]$Job
+        [PoshRS.PowerShell.RSJob[]]$Job
     )
     Begin {        
         If ($PSBoundParameters['Debug']) {

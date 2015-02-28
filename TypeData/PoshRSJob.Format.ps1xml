@@ -1,9 +1,9 @@
-﻿<Configuration>
+<Configuration>
   <ViewDefinitions>
     <View>
       <Name>ComputerTarget</Name>
       <ViewSelectedBy>
-        <TypeName>PSAsync.PowerShell.AsyncJob</TypeName>
+        <TypeName>PoshRS.PowerShell.RSJob</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -67,7 +67,7 @@
     <View>
       <Name>Update</Name>
       <ViewSelectedBy>
-        <TypeName>PSAsync.PowerShell.AsyncJob</TypeName>
+        <TypeName>PoshRS.PowerShell.RSJob</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>

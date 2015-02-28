@@ -1,6 +1,6 @@
-﻿<Types>
+<Types>
   <Type>
-    <Name>PSAsync.PowerShell.AsyncJob</Name>
+    <Name>PoshRS.PowerShell.RSJob</Name>
     <Members>
       <ScriptProperty>
         <Name>HasErrors</Name>
@@ -11,7 +11,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>PSAsync.PowerShell.AsyncJob</Name>
+    <Name>PoshRS.PowerShell.RSJob</Name>
     <Members>
       <ScriptProperty>
         <Name>State</Name>
@@ -22,7 +22,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>PSAsync.PowerShell.AsyncJob</Name>
+    <Name>PoshRS.PowerShell.RSJob</Name>
     <Members>
       <ScriptProperty>
         <Name>Verbose</Name>
@@ -33,7 +33,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>PSAsync.PowerShell.AsyncJob</Name>
+    <Name>PoshRS.PowerShell.RSJob</Name>
     <Members>
       <ScriptProperty>
         <Name>Debug</Name>
@@ -44,7 +44,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>PSAsync.PowerShell.AsyncJob</Name>
+    <Name>PoshRS.PowerShell.RSJob</Name>
     <Members>
       <ScriptProperty>
         <Name>Warning</Name>
@@ -55,7 +55,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>PSAsync.PowerShell.AsyncJob</Name>
+    <Name>PoshRS.PowerShell.RSJob</Name>
     <Members>
       <ScriptProperty>
         <Name>Error</Name>
@@ -66,7 +66,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>PSAsync.PowerShell.AsyncJob</Name>
+    <Name>PoshRS.PowerShell.RSJob</Name>
     <Members>
       <ScriptProperty>
         <Name>Progress</Name>
@@ -77,7 +77,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>PSAsync.PowerShell.AsyncRunspacePool</Name>
+    <Name>PoshRS.PowerShell.RSRunspacePool</Name>
     <Members>
       <ScriptProperty>
         <Name>AvailableJobs</Name>
@@ -88,7 +88,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>PSAsync.PowerShell.AsyncRunspacePool</Name>
+    <Name>PoshRS.PowerShell.RSRunspacePool</Name>
     <Members>
       <ScriptProperty>
         <Name>State</Name>

@@ -1,4 +1,4 @@
-﻿Function Stop-AsyncJob {
+Function Stop-RSJob {
     [cmdletbinding(
         DefaultParameterSetName='Job'
     )]
@@ -13,7 +13,7 @@
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PSAsync.PowerShell.AsyncJob[]]$Job
+        [PoshRS.PowerShell.RSJob[]]$Job
     )
     Begin {        
         If ($PSBoundParameters['Debug']) {

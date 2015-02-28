@@ -1,14 +1,14 @@
-﻿Function Start-AsyncJob {
+Function Start-RSJob {
     [cmdletbinding(
         DefaultParameterSetName = 'All'
     )]
     Param (
+        [parameter(Position=0,ParameterSetName = 'ScriptBlock')]
+        [ScriptBlock]$ScriptBlock,
+        [parameter(Position=0,ParameterSetName = 'ScriptPath')]
+        [string]$FilePath,
         [parameter(ValueFromPipeline,ValueFromPipelineByPropertyName)]
         [object]$InputObject,
-        [parameter(ParameterSetName = 'ScriptBlock')]
-        [ScriptBlock]$ScriptBlock,
-        [parameter(ParameterSetName = 'ScriptPath')]
-        [string]$FilePath,
         [parameter()]
         [object]$Name,
         [parameter()]
@@ -28,13 +28,13 @@
             If ($Name -isnot [scriptblock]) {
                 $Name = [scriptblock]::Create("Write-Output $Name")
             } Else {
-                $Name = [scriptblock]::Create( ($Name -replace '\$_','$Object'))
+                $Name = [scriptblock]::Create( ($Name -replace '\$_','$Item'))
             }
         } Else {
             $Name = [scriptblock]::Create('Write-Output Job$($Id)')
         }
-        Write-Verbose "Creating runspacepool with max threads: $Throttle"
         $RunspacePoolID = [guid]::NewGuid().ToString()
+        Write-Verbose "Creating runspacepool <$($RunspacePoolID)> with max threads: $Throttle"        
         $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
         If ($PSBoundParameters['ModulesToImport']) {
             [void]$InitialSessionState.ImportPSModule($ModulesToImport)
@@ -56,37 +56,67 @@
         If ($PSBoundParameters['FilePath']) {
             $ScriptBlock = [scriptblock]::Create((Get-Content $FilePath))
         }
-        $RSPObject = [PSAsync.PowerShell.AsyncRunspacePool]@{
+        $RSPObject = [PoshRS.PowerShell.RSRunspacePool]@{
             RunspacePool = $RunspacePool
             MaxJobs = $RunspacePool.GetMaxRunspaces()
             RunspacePoolID = $RunspacePoolID
         }
-        Write-Verbose "ScriptBlock: $($ScriptBlock)"
+        Write-Debug "ScriptBlock: $($ScriptBlock)"
         [System.Threading.Monitor]::Enter($RunspacePools.syncroot) 
         [void]$RunspacePools.Add($RSPObject)
         [System.Threading.Monitor]::Exit($RunspacePools.syncroot) 
     }
     Process {
-        ForEach ($Object in $InputObject) {   
+        If ($InputObject) {
+            ForEach ($Item in $InputObject) {   
+                $RunspacePoolJobs++
+                $ID = Increment                    
+                Write-Verbose "Using $($Item)"
+                $PowerShell = [powershell]::Create().AddScript($ScriptBlock)
+                $PowerShell.RunspacePool = $RunspacePool
+                [void]$PowerShell.AddArgument($Item)
+                ForEach ($argument in $ArgumentList) {
+                    Write-Verbose "Adding Argument: $($argument)"
+                    [void]$PowerShell.AddArgument($argument)    
+                }
+                $Handle = $PowerShell.BeginInvoke()
+                $Object = [PoshRS.PowerShell.RSJob]@{
+                    Name = $Name.InvokeReturnAsIs()
+                    InstanceID = [guid]::NewGuid().ToString()
+                    ID = $ID  
+                    Handle = $Handle
+                    InnerJob = $PowerShell
+                    Runspace = $PowerShell.Runspace
+                    Finished = $handle.RSWaitHandle
+                    Command  = $PowerShell.Commands.Commands.CommandText
+                    RunspacePoolID = $RunSpacePoolID
+                }
+
+                [System.Threading.Monitor]::Enter($Jobs.syncroot) 
+                [void]$Jobs.Add($Object)
+                [System.Threading.Monitor]::Exit($Jobs.syncroot) 
+                Write-Verbose "Outputting job object"
+                $Object
+            }
+        } Else {
             $RunspacePoolJobs++
             $ID = Increment                    
-            Write-Verbose "Using $($Object)"
+            Write-Verbose "Using $($Item)"
             $PowerShell = [powershell]::Create().AddScript($ScriptBlock)
             $PowerShell.RunspacePool = $RunspacePool
-            [void]$PowerShell.AddArgument($Object)
-            ForEach ($item in $ArgumentList) {
-                Write-Verbose "Adding Argument: $($Item)"
-                [void]$PowerShell.AddArgument($item)    
+            ForEach ($argument in $ArgumentList) {
+                Write-Verbose "Adding Argument: $($argument)"
+                [void]$PowerShell.AddArgument($argument)    
             }
             $Handle = $PowerShell.BeginInvoke()
-            $Object = [PSAsync.PowerShell.AsyncJob]@{
-                Name = $Name.InvokeReturnAsIs()
+            $Object = [PoshRS.PowerShell.RSJob]@{
+                Name = $Name
                 InstanceID = [guid]::NewGuid().ToString()
                 ID = $ID  
                 Handle = $Handle
                 InnerJob = $PowerShell
                 Runspace = $PowerShell.Runspace
-                Finished = $handle.AsyncWaitHandle
+                Finished = $handle.RSWaitHandle
                 Command  = $PowerShell.Commands.Commands.CommandText
                 RunspacePoolID = $RunSpacePoolID
             }
@@ -94,10 +124,10 @@
             [System.Threading.Monitor]::Enter($Jobs.syncroot) 
             [void]$Jobs.Add($Object)
             [System.Threading.Monitor]::Exit($Jobs.syncroot) 
-            $Object
+            Write-Verbose "Outputting job object"
+            $Object            
         }
     }
-    End {
-        
+    End {        
     }
 }
