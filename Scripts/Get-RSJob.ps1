@@ -17,7 +17,7 @@ Function Get-RSJob {
         [ValidateSet('Running','Completed')]
         [string]$State,
         [parameter()]
-        [boolean]$HasMoreData
+        [Switch]$HasMoreData
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
@@ -79,22 +79,10 @@ Function Get-RSJob {
                 }    
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())   
             }
-            'All' {
-                If ($PSBoundParameters['State']) {
-                    $HasWhere = $True
-                    [void]$StringBuilder.Append("`$_.State -eq `"$State`"")
-                    $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString()) 
-                } Else {                
-                    $ScriptBlock=$Null
-                }
-            }
+            'All' {$ScriptBlock=$Null}
         }
         If ($PSCmdlet.ParameterSetName -eq 'All') {
-            If ($HasWhere) {
-                $Jobs | Where $ScriptBlock
-            } Else {
-                $jobs
-            }
+            $jobs
         } Else {
             Write-Debug "Items: $Items"
             Write-Debug "WhereString: $($StringBuilder.ToString())" 

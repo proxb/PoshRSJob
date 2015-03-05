@@ -1,9 +1,4 @@
-$Global:Test = @{
-    ExecutionContext = $ExecutionContext
-    PSCommandPath = $PSCommandPath
-    PSScriptRoot = $PSScriptRoot
-    MyInvocation = $MyInvocation
-}
+#Requires -Version 3.0
 
 #region Custom Object
 Write-Verbose "Creating custom RSJob object"
@@ -70,9 +65,10 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
             If ($job.Handle.isCompleted) {
                 $data = $job.InnerJob.EndInvoke($job.Handle)
                 $job.InnerJob.dispose()   
-                If ($data) {
+                If (Get-Variable data) {
                     $job.output = $data
                     $job.HasMoreData = $True
+                    Remove-Variable data
                 }                            
             } 
         }        
@@ -83,18 +79,14 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
 $jobCleanup.PowerShell.Runspace = $jobcleanup.Runspace
 $jobCleanup.Handle = $jobCleanup.PowerShell.BeginInvoke()  
 
+#New-Object System.Management.Automation.Runspaces.TypeConfigurationEntry -ArgumentList 
+
 Write-Verbose "Creating routine to monitor Runspace Pools"
 $RunspacePoolCleanup.Flag=$True
 $RunspacePoolCleanup.Host=$Host
 #5 minute timeout for unused runspace pools
 $RunspacePoolCleanup.Timeout = [timespan]::FromMinutes(1).Ticks
 $RunspacePoolCleanup.Runspace =[runspacefactory]::CreateRunspace()   
-#Create Type Collection so the object will work properly
-$Types = Get-ChildItem "$($PSScriptRoot)\TypeData" -Filter *Types* | Select -ExpandProperty Fullname
-$Types | ForEach {
-    $TypeEntry = New-Object System.Management.Automation.Runspaces.TypeConfigurationEntry -ArgumentList $_
-    $RunspacePoolCleanup.Runspace.RunspaceConfiguration.types.Append($TypeEntry)
-}
 $RunspacePoolCleanup.Runspace.Open()         
 $RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("RunspacePoolCleanup",$RunspacePoolCleanup)     
 $RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("RunspacePools",$RunspacePools) 
@@ -104,7 +96,6 @@ $RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
     Do { 
         $DisposeRunspacePools=$False  
         If ($RunspacePools.Count -gt 0) { 
-            #$ParentHost.ui.WriteVerboseLine("$($RunspacePools|gm | Out-String)") 
             #$ParentHost.ui.WriteVerboseLine("$($RunspacePools | Out-String)")           
             [System.Threading.Monitor]::Enter($RunspacePools.syncroot) 
             Foreach($RunspacePool in $RunspacePools) {                
@@ -144,7 +135,7 @@ $RunspacePoolCleanup.Handle = $RunspacePoolCleanup.PowerShell.BeginInvoke()
 #region Load Functions
 $ScriptPath = Split-Path $MyInvocation.MyCommand.Path
 Try {
-    Get-ChildItem "$ScriptPath\Scripts" | Select -Expand FullName | ForEach {
+    Get-ChildItem "$ScriptPath\Scripts" -Filter *.ps1 | Select -Expand FullName | ForEach {
         $Function = Split-Path $_ -Leaf
         . $_
     }
@@ -158,6 +149,57 @@ Try {
 Function Increment {
     Set-Variable -Name JobId -Value ($JobId + 1) -Force -Scope Global
     Write-Output $JobId
+}
+
+Function GetUsingVariables {
+    Param ([scriptblock]$ScriptBlock)
+    $ScriptBlock.ast.FindAll({$args[0] -is [System.Management.Automation.Language.UsingExpressionAst]},$True)    
+}
+
+Function GetUsingVariableValues {
+    Param ([System.Management.Automation.Language.UsingExpressionAst[]]$UsingVar)
+    $UsingVar = $UsingVar | Group Parent | ForEach {$_.Group | Select -First 1}
+    ForEach ($Var in $UsingVar) {
+        Try {
+            $Value = Get-Variable -Name $Var.SubExpression.VariablePath.UserPath -ErrorAction Stop
+            [pscustomobject]@{
+                Name = $Var.SubExpression.Extent.Text
+                Value = $Value.Value
+                NewName = ('$__using_{0}' -f $Var.SubExpression.VariablePath.UserPath)
+                NewVarName = ('__using_{0}' -f $Var.SubExpression.VariablePath.UserPath)
+            }
+        } Catch {
+            Throw "$($Var.SubExpression.Extent.Text) is not a valid Using: variable!"
+        }
+    }
+}
+
+Function ConvertScript {
+    Param (
+        [scriptblock]$ScriptBlock
+    )
+    $UsingVariables = GetUsingVariables -ScriptBlock $ScriptBlock
+    If ($UsingVariables) {
+        $List = New-Object 'System.Collections.Generic.List`1[System.Management.Automation.Language.VariableExpressionAst]'
+        ForEach ($Ast in $UsingVariables) {
+            [void]$list.Add($Ast.SubExpression)
+        }
+        $UsingVariableData = GetUsingVariableValues $UsingVariables
+        $NewParams = $UsingVariableData.NewName -join ', '
+        $Tuple=[Tuple]::Create($list,$NewParams)
+        $bindingFlags = [Reflection.BindingFlags]"Default,NonPublic,Instance"
+
+        $GetWithInputHandlingForInvokeCommandImpl = ($ScriptBlock.ast.gettype().GetMethod('GetWithInputHandlingForInvokeCommandImpl',$bindingFlags))
+        $StringScriptBlock = $GetWithInputHandlingForInvokeCommandImpl.Invoke($ScriptBlock.ast,@($Tuple))
+        If (-NOT $ScriptBlock.Ast.ParamBlock) {
+            $StringScriptBlock = "Param($($NewParams))`n$($StringScriptBlock)"
+            [scriptblock]::Create($StringScriptBlock)
+        } Else {
+            [scriptblock]::Create($StringScriptBlock)
+        }
+    } Else {
+        $ScriptBlock
+    }
 }
 #endregion Private Functions
 
