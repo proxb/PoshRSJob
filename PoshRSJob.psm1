@@ -79,14 +79,20 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
 $jobCleanup.PowerShell.Runspace = $jobcleanup.Runspace
 $jobCleanup.Handle = $jobCleanup.PowerShell.BeginInvoke()  
 
-#New-Object System.Management.Automation.Runspaces.TypeConfigurationEntry -ArgumentList 
-
 Write-Verbose "Creating routine to monitor Runspace Pools"
 $RunspacePoolCleanup.Flag=$True
 $RunspacePoolCleanup.Host=$Host
 #5 minute timeout for unused runspace pools
 $RunspacePoolCleanup.Timeout = [timespan]::FromMinutes(1).Ticks
-$RunspacePoolCleanup.Runspace =[runspacefactory]::CreateRunspace()   
+$RunspacePoolCleanup.Runspace =[runspacefactory]::CreateRunspace()
+ 
+#Create Type Collection so the object will work properly 
+$Types = Get-ChildItem "$($PSScriptRoot)\TypeData" -Filter *Types* | Select -ExpandProperty Fullname 
+$Types | ForEach { 
+    $TypeEntry = New-Object System.Management.Automation.Runspaces.TypeConfigurationEntry -ArgumentList $_ 
+    $RunspacePoolCleanup.Runspace.RunspaceConfiguration.types.Append($TypeEntry) 
+} 
+  
 $RunspacePoolCleanup.Runspace.Open()         
 $RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("RunspacePoolCleanup",$RunspacePoolCleanup)     
 $RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("RunspacePools",$RunspacePools) 
