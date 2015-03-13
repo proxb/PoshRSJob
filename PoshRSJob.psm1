@@ -106,7 +106,7 @@ $RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
             [System.Threading.Monitor]::Enter($RunspacePools.syncroot) 
             Foreach($RunspacePool in $RunspacePools) {                
                 #$ParentHost.ui.WriteVerboseLine("RunspacePool <$($RunspacePool.RunspaceID)> | MaxJobs: $($RunspacePool.MaxJobs) | AvailJobs: $($RunspacePool.AvailableJobs)")
-                If ($RunspacePool.AvailableJobs -eq $RunspacePool.MaxJobs) {
+                If (($RunspacePool.AvailableJobs -eq $RunspacePool.MaxJobs) -AND $RunspacePool.LastActivity.Ticks -ne 0) {
                     If ((Get-Date).Ticks - $RunspacePool.LastActivity.Ticks -gt $RunspacePoolCleanup.Timeout) {
                         #Dispose of runspace pool
                         $RunspacePool.RunspacePool.Close()
