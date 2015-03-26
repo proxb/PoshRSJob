@@ -136,7 +136,7 @@ Function Start-RSJob {
         [ScriptBlock]$ScriptBlock,
         [parameter(Position=0,ParameterSetName = 'ScriptPath')]
         [string]$FilePath,
-        [parameter(ValueFromPipeline,ValueFromPipelineByPropertyName)]
+        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True)]
         [object]$InputObject,
         [parameter()]
         [object]$Name,
@@ -157,7 +157,7 @@ Function Start-RSJob {
             If ($Name -isnot [scriptblock]) {
                 $Name = [scriptblock]::Create("Write-Output $Name")
             } Else {
-                $Name = [scriptblock]::Create( ($Name -replace '\$_','$Object'))
+                $Name = [scriptblock]::Create( ($Name -replace '\$_','$Item'))
             }
         } Else {
             $Name = [scriptblock]::Create('Write-Output Job$($Id)')
@@ -180,24 +180,49 @@ Function Start-RSJob {
             }           
         }
         $RunspacePool = [runspacefactory]::CreateRunspacePool(1,$Throttle,$InitialSessionState,$Host)
-        $RunspacePool.CleanupInterval = [timespan]::FromMinutes(2)    
+        If ($PSVersionTable.PSVersion.Major -gt 2) {
+            $RunspacePool.CleanupInterval = [timespan]::FromMinutes(2)    
+        }
         $RunspacePool.Open()
         If ($PSBoundParameters['FilePath']) {
             $ScriptBlock = [scriptblock]::Create((Get-Content $FilePath))
         }
-        $RSPObject = [PoshRS.PowerShell.RSRunspacePool]@{
+        $RSPObject = New-Object PoshRS.PowerShell.RSRunspacePool -Property @{
             RunspacePool = $RunspacePool
             MaxJobs = $RunspacePool.GetMaxRunspaces()
             RunspacePoolID = $RunspacePoolID
         }
-        #Convert ScriptBlock for $Using:
-        $UsingVariables = GetUsingVariables $ScriptBlock
-        If ($UsingVariables) {
-            Write-Verbose "Found $($UsingVariables.Count) '`$Using:' variables"
-            $UsingVariableValues = @(GetUsingVariableValues $UsingVariables)
-            $NewScriptBlock = ConvertScript $ScriptBlock
+        $List = New-Object System.Collections.ArrayList
+        If ($PSBoundParameters.ContainsKey('InputObject')) {            
+            [void]$list.AddRange($InputObject)    
+            $IsPipeline = $False
         } Else {
-            $NewScriptBlock = $ScriptBlock
+            $IsPipeline = $True
+        }
+        #Convert ScriptBlock for $Using:
+        Switch ($PSVersionTable.PSVersion.Major) {
+            2 {
+                Write-Debug "Using PSParser with PowerShell V2"
+                $UsingVariables = GetUsingVariablesV2 -ScriptBlock $ScriptBlock
+                If ($UsingVariables) {
+                    $UsingVariableValues = @(GetUsingVariableValuesV2 -UsingVar $UsingVariables)
+                    Write-Verbose "Found $($UsingVariableValues.Count) Using values"
+                    $NewScriptBlock = ConvertScriptBlockV2 -ScriptBlock $ScriptBlock -UsingVariable $UsingVariableValues 
+                } Else {
+                    $NewScriptBlock = $ScriptBlock
+                }
+            }
+            Default {
+                Write-Debug "Using AST with PowerShell V3+"
+                $UsingVariables = GetUsingVariables $ScriptBlock
+                If ($UsingVariables) {                    
+                    $UsingVariableValues = @(GetUsingVariableValues $UsingVariables)
+                    Write-Verbose "Found $($UsingVariableValues.Count) Using values"
+                    $NewScriptBlock = ConvertScript $ScriptBlock
+                } Else {
+                    $NewScriptBlock = $ScriptBlock
+                }            
+            }
         }
 
         Write-Debug "ScriptBlock: $($NewScriptBlock)"
@@ -206,25 +231,68 @@ Function Start-RSJob {
         [System.Threading.Monitor]::Exit($RunspacePools.syncroot) 
     }
     Process {
-        ForEach ($Object in $InputObject) {   
-            $RunspacePoolJobs++
+        If ($IsPipeline -AND $PSBoundParameters.ContainsKey('InputObject')) {
+            [void]$List.Add($InputObject)
+        }
+    }
+    End {  
+        If ($List.Count -gt 0) {
+            Write-Debug "InputObject"
+            ForEach ($Item in $list) {
+                $ID = Increment                    
+                Write-Verbose "Using $($Item) as pipline variable"
+                $PowerShell = [powershell]::Create().AddScript($NewScriptBlock)
+                $PowerShell.RunspacePool = $RunspacePool
+                [void]$PowerShell.AddArgument($Item)
+                If ($UsingVariableValues) {
+                    For ($i=0;$i -lt $UsingVariableValues.count;$i++) {
+                        Write-Verbose "Adding Param: $($UsingVariableValues[$i].Name) Value: $($UsingVariableValues[$i].Value)"
+                        [void]$PowerShell.AddParameter($UsingVariableValues[$i].NewVarName,$UsingVariableValues[$i].Value)
+                    }
+                }
+                If ($PSBoundParameters.ContainsKey('ArgumentList')) {
+                    ForEach ($Argument in $ArgumentList) {
+                        Write-Verbose "Adding Argument: $($Argument)"
+                        [void]$PowerShell.AddArgument($Argument)    
+                    }
+                }
+                $Handle = $PowerShell.BeginInvoke()
+                $Object = New-Object PoshRS.PowerShell.RSJob -Property @{
+                    Name = $Name.InvokeReturnAsIs()
+                    InstanceID = [guid]::NewGuid().ToString()
+                    ID = $ID  
+                    Handle = $Handle
+                    InnerJob = $PowerShell
+                    Runspace = $PowerShell.Runspace
+                    Finished = $handle.RSWaitHandle
+                    Command  = $ScriptBlock.ToString()
+                    RunspacePoolID = $RunSpacePoolID
+                }
+
+                [System.Threading.Monitor]::Enter($Jobs.syncroot) 
+                [void]$Jobs.Add($Object)
+                [System.Threading.Monitor]::Exit($Jobs.syncroot) 
+                $Object            
+            }
+        } Else {
+            Write-Debug "No InputObject"
             $ID = Increment                    
-            Write-Verbose "Using $($Object) as pipline variable"
             $PowerShell = [powershell]::Create().AddScript($NewScriptBlock)
             $PowerShell.RunspacePool = $RunspacePool
-            [void]$PowerShell.AddArgument($Object)
             If ($UsingVariableValues) {
                 For ($i=0;$i -lt $UsingVariableValues.count;$i++) {
                     Write-Verbose "Adding Param: $($UsingVariableValues[$i].Name) Value: $($UsingVariableValues[$i].Value)"
                     [void]$PowerShell.AddParameter($UsingVariableValues[$i].NewVarName,$UsingVariableValues[$i].Value)
                 }
             }
-            ForEach ($item in $ArgumentList) {
-                Write-Verbose "Adding Argument: $($Item)"
-                [void]$PowerShell.AddArgument($item)    
+            If ($PSBoundParameters.ContainsKey('ArgumentList')) {
+                ForEach ($Argument in $ArgumentList) {
+                    Write-Verbose "Adding Argument: $($Argument)"
+                    [void]$PowerShell.AddArgument($Argument)    
+                }
             }
             $Handle = $PowerShell.BeginInvoke()
-            $Object = [PoshRS.PowerShell.RSJob]@{
+            $Object = New-Object PoshRS.PowerShell.RSJob -Property @{
                 Name = $Name.InvokeReturnAsIs()
                 InstanceID = [guid]::NewGuid().ToString()
                 ID = $ID  
@@ -239,9 +307,7 @@ Function Start-RSJob {
             [System.Threading.Monitor]::Enter($Jobs.syncroot) 
             [void]$Jobs.Add($Object)
             [System.Threading.Monitor]::Exit($Jobs.syncroot) 
-            $Object
-        }
-    }
-    End {        
+            $Object        
+        }      
     }
 }
