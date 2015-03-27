@@ -16,11 +16,11 @@ Add-Type -TypeDefinition @"
             public System.Management.Automation.PowerShell InnerJob;
             public System.Threading.ManualResetEvent Finished;
             public string Command;
-            public System.Management.Automation.ErrorRecord[] Error;
-            public System.Management.Automation.VerboseRecord[] Verbose;
-            public System.Management.Automation.DebugRecord[] Debug;
-            public System.Management.Automation.WarningRecord[] Warning;
-            public System.Management.Automation.ProgressRecord[] Progress;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.ErrorRecord> Error;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.VerboseRecord> Verbose;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.DebugRecord> Debug;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.WarningRecord> Warning;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.ProgressRecord> Progress;
             public bool HasMoreData;
             public bool HasErrors;
             public object Output;
