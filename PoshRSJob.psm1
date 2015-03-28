@@ -70,6 +70,13 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
         Foreach($job in $jobs) {
             If ($job.Handle.isCompleted) {
                 $data = $job.InnerJob.EndInvoke($job.Handle)
+                If ($job.InnerJob.Streams.Error) {
+                    $ErrorList = New-Object System.Management.Automation.PSDataCollection[System.Management.Automation.ErrorRecord]
+                    ForEach ($Err in $job.InnerJob.Streams.Error) {
+                        [void]$ErrorList.Add($Err)
+                    }
+                    $job.Error = $ErrorList
+                }
                 $job.InnerJob.dispose()   
                 If (Get-Variable data) {
                     $job.output = $data
@@ -334,11 +341,11 @@ Function ConvertScriptBlockV2 {
 #endregion Private Functions
 
 #region Aliases
-New-Alias -Name saj -Value Start-RSJob
-New-Alias -Name gaj -Value Get-RSJob
-New-Alias -Name raj -Value Receive-RSJob
-New-Alias -Name rmaj -Value Remove-RSJob
-New-Alias -Name spaj -Value Stop-RSJob
+New-Alias -Name ssj -Value Start-RSJob
+New-Alias -Name gsj -Value Get-RSJob
+New-Alias -Name rsj -Value Receive-RSJob
+New-Alias -Name rmsj -Value Remove-RSJob
+New-Alias -Name spsj -Value Stop-RSJob
 #endregion Aliases
 
 #region Handle Module Removal
