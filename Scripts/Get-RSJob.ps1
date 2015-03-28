@@ -14,7 +14,7 @@ Function Get-RSJob {
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
         [parameter(ValueFromPipelineByPropertyName=$True)]
-        [ValidateSet('Running','Completed')]
+        [ValidateSet('NotStarted','Running','Completed','Failed','Stopping','Stopped','Disconnected')]
         [string]$State,
         [parameter()]
         [Switch]$HasMoreData
@@ -24,7 +24,6 @@ Function Get-RSJob {
             $DebugPreference = 'Continue'
         }        
         $List = New-Object System.Collections.ArrayList
-        $StringBuilder = New-Object System.Text.StringBuilder
 
         #Take care of bound parameters
         If ($PSBoundParameters['Name']) {
@@ -36,6 +35,7 @@ Function Get-RSJob {
         If ($PSBoundParameters['InstanceId']) {
             [void]$list.AddRange($InstanceId)
         }
+        $WhereList = New-Object System.Collections.ArrayList
     }
     Process {
         If ($PSCmdlet.ParameterSetName -ne 'All') {
@@ -48,46 +48,31 @@ Function Get-RSJob {
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
                 $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
-                [void]$StringBuilder.Append("`$_.Name -match $Items")
-                If ($PSBoundParameters['State']) {
-                    [void]$StringBuilder.Append(" -AND `$_.State -eq `"$State`"")
-                }
-                If ($PSBoundParameters.ContainsKey('HasMoreData')) {
-                    [void]$StringBuilder.Append(" -AND `$_.HasMoreData -eq `$$HasMoreData")
-                }   
-                $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                    
+                [void]$WhereList.Add("`$_.Name -match $Items")                    
             }
             'Id' {
                 $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
-                [void]$StringBuilder.Append("`$_.Id -match $Items")
-                If ($PSBoundParameters['State']) {
-                    [void]$StringBuilder.Append(" -AND `$_.State -eq `"$State`"")
-                }
-                If ($PSBoundParameters.ContainsKey('HasMoreData')) {
-                    [void]$StringBuilder.Append(" -AND `$_.HasMoreData -eq `$$HasMoreData")
-                }  
-                $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                
+                [void]$WhereList.Add("`$_.Id -match $Items")                
             }
             'Guid' {
                 $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
-                [void]$StringBuilder.Append("`$_.InstanceId -match $Items")
-                If ($PSBoundParameters['State']) {
-                    [void]$StringBuilder.Append(" -AND `$_.State -eq `"$State`"")
-                }
-                If ($PSBoundParameters.ContainsKey('HasMoreData')) {
-                    [void]$StringBuilder.Append(" -AND `$_.HasMoreData -eq `$$HasMoreData")
-                }    
-                $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())   
+                [void]$WhereList.Add("`$_.InstanceId -match $Items")  
             }
-            'All' {$ScriptBlock=$Null}
         }
-        If ($PSCmdlet.ParameterSetName -eq 'All') {
-            $jobs
-        } Else {
-            Write-Debug "Items: $Items"
-            Write-Debug "WhereString: $($StringBuilder.ToString())" 
+        If ($PSBoundParameters['State']) {
+            [void]$WhereList.Add("`$_.State -eq `"$State`"")
+        }
+        If ($PSBoundParameters.ContainsKey('HasMoreData')) {
+            [void]$WhereList.Add("`$_.HasMoreData -eq `$$HasMoreData")
+        }
+        If ($WhereList.count -gt 0) {
+            $WhereString = $WhereList -join ' -AND '
+            $ScriptBlock = [scriptblock]::Create($WhereString)
+        }               
+        If ($ScriptBlock) {
+            Write-Debug "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
             $Jobs | Where $ScriptBlock 
-        }
+        } Else {$Jobs}
     }
 }

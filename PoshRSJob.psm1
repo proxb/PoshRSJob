@@ -1,5 +1,4 @@
-#Requires -Version 3.0
-
+$ScriptPath = Split-Path $MyInvocation.MyCommand.Path
 #region Custom Object
 Write-Verbose "Creating custom RSJob object"
 Add-Type -TypeDefinition @"
@@ -17,11 +16,11 @@ Add-Type -TypeDefinition @"
             public System.Management.Automation.PowerShell InnerJob;
             public System.Threading.ManualResetEvent Finished;
             public string Command;
-            public System.Management.Automation.ErrorRecord[] Error;
-            public System.Management.Automation.VerboseRecord[] Verbose;
-            public System.Management.Automation.DebugRecord[] Debug;
-            public System.Management.Automation.WarningRecord[] Warning;
-            public System.Management.Automation.ProgressRecord[] Progress;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.ErrorRecord> Error;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.VerboseRecord> Verbose;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.DebugRecord> Debug;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.WarningRecord> Warning;
+            public System.Management.Automation.PSDataCollection<System.Management.Automation.ProgressRecord> Progress;
             public bool HasMoreData;
             public bool HasErrors;
             public object Output;
@@ -36,6 +35,13 @@ Add-Type -TypeDefinition @"
             public DateTime LastActivity = DateTime.MinValue;
             public System.Guid RunspacePoolID;
             public bool CanDispose = false;
+        }
+        public class V2UsingVariable
+        {
+            public string Name;
+            public string NewName;
+            public object Value;
+            public string NewVarName;
         }
     }
 "@ -Language CSharpVersion3
@@ -64,6 +70,13 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
         Foreach($job in $jobs) {
             If ($job.Handle.isCompleted) {
                 $data = $job.InnerJob.EndInvoke($job.Handle)
+                If ($job.InnerJob.Streams.Error) {
+                    $ErrorList = New-Object System.Management.Automation.PSDataCollection[System.Management.Automation.ErrorRecord]
+                    ForEach ($Err in $job.InnerJob.Streams.Error) {
+                        [void]$ErrorList.Add($Err)
+                    }
+                    $job.Error = $ErrorList
+                }
                 $job.InnerJob.dispose()   
                 If (Get-Variable data) {
                     $job.output = $data
@@ -106,7 +119,7 @@ $RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
             [System.Threading.Monitor]::Enter($RunspacePools.syncroot) 
             Foreach($RunspacePool in $RunspacePools) {                
                 #$ParentHost.ui.WriteVerboseLine("RunspacePool <$($RunspacePool.RunspaceID)> | MaxJobs: $($RunspacePool.MaxJobs) | AvailJobs: $($RunspacePool.AvailableJobs)")
-                If (($RunspacePool.AvailableJobs -eq $RunspacePool.MaxJobs) -AND $RunspacePool.LastActivity.Ticks -ne 0) {
+                If (($RunspacePool.AvailableJobs -eq $RunspacePool.MaxJobs) -AND $RunspacePools.LastActivity.Ticks -ne 0) {
                     If ((Get-Date).Ticks - $RunspacePool.LastActivity.Ticks -gt $RunspacePoolCleanup.Timeout) {
                         #Dispose of runspace pool
                         $RunspacePool.RunspacePool.Close()
@@ -139,7 +152,6 @@ $RunspacePoolCleanup.Handle = $RunspacePoolCleanup.PowerShell.BeginInvoke()
 #endregion Cleanup Routine
 
 #region Load Functions
-$ScriptPath = Split-Path $MyInvocation.MyCommand.Path
 Try {
     Get-ChildItem "$ScriptPath\Scripts" -Filter *.ps1 | Select -Expand FullName | ForEach {
         $Function = Split-Path $_ -Leaf
@@ -150,6 +162,11 @@ Try {
     Continue
 }
 #endregion Load Functions
+
+#region Format and Type Data
+Update-FormatData "$ScriptPath\TypeData\PoshRSJob.Format.ps1xml"
+Update-TypeData "$ScriptPath\TypeData\PoshRSJob.Types.ps1xml"
+#endregion Format and Type Data
 
 #region Private Functions
 Function Increment {
@@ -207,14 +224,128 @@ Function ConvertScript {
         $ScriptBlock
     }
 }
+
+Function GetUsingVariablesV2 {
+    Param ([scriptblock]$ScriptBlock)
+    $errors = [System.Management.Automation.PSParseError[]] @()
+    $Results = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)
+    $Results | Where {
+        $_.Content -match '^Using:' -AND $_.Type -eq 'Variable'
+    }
+}
+
+Function GetUsingVariableValuesV2 {
+    Param ([System.Management.Automation.PSToken[]]$UsingVar)
+    $UsingVar | ForEach {
+        $Name = $_.Content.Trim('Using:')
+        New-Object PoshRS.PowerShell.V2UsingVariable -Property @{
+            Name = $Name
+            NewName = '$__using_{0}' -f $Name
+            Value = (Get-Variable -Name $Name).Value
+            NewVarName = ('__using_{0}') -f $Name
+        }
+    }
+}
+
+Function IsExistingParamV2 {
+    Param([scriptblock]$ScriptBlock)
+    $errors = [System.Management.Automation.PSParseError[]] @()
+    $Tokens = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)       
+    $Finding=$True
+    For ($i=0;$i -lt $Tokens.count; $i++) {       
+        If ($Tokens[$i].Content -eq 'Param' -AND $Tokens[$i].Type -eq 'Keyword') {
+            $HasParam = $True
+            BREAK
+        }
+    }
+    If ($HasParam) {
+        $True
+    } Else {
+        $False
+    }
+}
+
+Function ConvertScriptBlockV2 {
+    Param ([scriptblock]$ScriptBlock,[PoshRS.PowerShell.V2UsingVariable[]]$UsingVariable)
+    $errors = [System.Management.Automation.PSParseError[]] @()
+    $Tokens = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)
+    $StringBuilder = New-Object System.Text.StringBuilder
+    $UsingHash = @{}
+    $UsingVariable | ForEach {
+        $UsingHash["Using:$($_.Name)"] = $_.NewVarName
+    }
+    $NewParams = ($UsingVariable | Select -expand NewName) -join ', '
+    $HasParam = IsExistingParamV2 -ScriptBlock $ScriptBlock
+    If (-Not $HasParam) {
+        [void]$StringBuilder.Append("Param($($NewParams))")
+    }
+    For ($i=0;$i -lt $Tokens.count; $i++){
+        Write-Verbose "Type: $($Tokens[$i].Type)"
+        Write-Verbose "Previous Line: $($Previous.StartLine) -- Current Line: $($Tokens[$i].StartLine)"
+        If ($Previous.StartLine -eq $Tokens[$i].StartLine) {
+            $Space = " " * [int]($Tokens[$i].StartColumn - $Previous.EndColumn)
+            [void]$StringBuilder.Append($Space)
+        }
+        Switch ($Tokens[$i].Type) {
+            'NewLine' {[void]$StringBuilder.Append("`n")}
+            'Variable' {
+                If ($UsingHash[$Tokens[$i].Content]) {
+                    [void]$StringBuilder.Append(("`${0}" -f $UsingHash[$Tokens[$i].Content]))
+                } Else {
+                    [void]$StringBuilder.Append(("`${0}" -f $Tokens[$i].Content))
+                }
+            }
+            'String' {
+                [void]$StringBuilder.Append(("`"{0}`"" -f $Tokens[$i].Content))
+            }
+            'GroupStart' {
+                $Script:GroupStart++
+                If ($Script:AddUsing -AND $Script:GroupStart -eq 1) {
+                    $Script:AddUsing = $False
+                    [void]$StringBuilder.Append($Tokens[$i].Content)                    
+                    If ($HasParam) {
+                        [void]$StringBuilder.Append("$($NewParams),")
+                    }
+                } Else {
+                    [void]$StringBuilder.Append($Tokens[$i].Content)
+                }
+            }
+            'GroupEnd' {
+                $Script:GroupStart--
+                If ($Script:GroupStart -eq 0) {
+                    $Script:Param = $False
+                    [void]$StringBuilder.Append($Tokens[$i].Content)
+                } Else {
+                    [void]$StringBuilder.Append($Tokens[$i].Content)
+                }
+            }
+            'KeyWord' {
+                If ($Tokens[$i].Content -eq 'Param') {
+                    $Script:Param = $True
+                    $Script:AddUsing = $True
+                    $Script:GroupStart=0
+                    [void]$StringBuilder.Append($Tokens[$i].Content)
+                } Else {
+                    [void]$StringBuilder.Append($Tokens[$i].Content)
+                }                
+            }
+            Default {
+                [void]$StringBuilder.Append($Tokens[$i].Content)         
+            }
+        } 
+        $Previous = $Tokens[$i]   
+    }
+    #$StringBuilder.ToString()
+    [scriptblock]::Create($StringBuilder.ToString())
+}
 #endregion Private Functions
 
 #region Aliases
-New-Alias -Name saj -Value Start-RSJob
-New-Alias -Name gaj -Value Get-RSJob
-New-Alias -Name raj -Value Receive-RSJob
-New-Alias -Name rmaj -Value Remove-RSJob
-New-Alias -Name spaj -Value Stop-RSJob
+New-Alias -Name ssj -Value Start-RSJob
+New-Alias -Name gsj -Value Get-RSJob
+New-Alias -Name rsj -Value Receive-RSJob
+New-Alias -Name rmsj -Value Remove-RSJob
+New-Alias -Name spsj -Value Stop-RSJob
 #endregion Aliases
 
 #region Handle Module Removal

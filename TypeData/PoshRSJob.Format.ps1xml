@@ -86,6 +86,12 @@
                 <PropertyName>HasMoreData</PropertyName>
               </ListItem>
               <ListItem>
+                <PropertyName>HasErrors</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Error</PropertyName>
+              </ListItem>
+              <ListItem>
                 <PropertyName>Command</PropertyName>
               </ListItem>
               <ListItem>
