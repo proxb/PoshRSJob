@@ -1,4 +1,44 @@
 Function Remove-RSJob {
+    <#
+        .SYNOPSIS
+            Deletes a Windows PowerShell runspace job.
+
+        .DESCRIPTION
+            Deletes a Windows PowerShell background job that has been started using Start-RSJob
+
+        .PARAMETER Name
+            The name of the jobs to remove..
+
+        .PARAMETER ID
+            The ID of the jobs to remove.
+
+        .PARAMETER InstanceID
+            The GUID of the jobs to remove.
+            
+        .PARAMETER Job
+            The job object to remove.  
+            
+        .PARAMETER Force
+            Force a running job to stop prior to being removed.        
+
+        .NOTES
+            Name: Remove-RSJob
+            Author: Boe Prox                
+
+        .EXAMPLE
+            Get-RSJob -State Completed | Remove-RSJob
+
+            Description
+            -----------
+            Deletes all jobs with a State of Completed.
+
+        .EXAMPLE
+            Remove-RSJob -ID 1,5,78
+
+            Description
+            -----------
+            Removes jobs with IDs 1,5,78.
+    #>
     [cmdletbinding(
         DefaultParameterSetName='Job',
         SupportsShouldProcess = $True
@@ -14,13 +54,14 @@ Function Remove-RSJob {
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PoshRS.PowerShell.RSJob[]]$Job
+        [PoshRS.PowerShell.RSJob[]]$Job,
+        [parameter()]
+        [switch]$Force
     )
     Begin {        
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
-        }  
-        Write-Debug "Begin"      
+        }      
         $List = New-Object System.Collections.ArrayList
         $StringBuilder = New-Object System.Text.StringBuilder
 
@@ -41,7 +82,6 @@ Function Remove-RSJob {
             [void]$list.AddRange($Job)
             $Bound = $True
         }
-        Write-Debug "Process"
     }
     Process {
         If (-Not $Bound) {
@@ -49,7 +89,6 @@ Function Remove-RSJob {
         }
     }
     End {
-        Write-Debug "End"
         Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
@@ -79,7 +118,16 @@ Function Remove-RSJob {
         $ToRemove | ForEach {
             If ($PSCmdlet.ShouldProcess("Name: $($_.Name), associated with JobID $($_.Id)",'Remove')) {
                 #Write-Verbose "Removing $($_.InstanceId)"
-                [void]$jobs.Remove($_)
+                If ($_.State -ne 'Completed') {
+                    If ($PSBoundParameters.ContainsKey('Force')) {
+                        $_.InnerJob.EndInvoke($_.Handle)
+                        $Jobs.Remove($_)
+                    } Else {
+                        Throw "Unable to remove job $($_.InstanceID)"
+                    }
+                } Else {
+                    [void]$jobs.Remove($_)
+                }
             }
         }
         [System.Threading.Monitor]::Exit($Jobs.syncroot) 

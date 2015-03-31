@@ -1,4 +1,41 @@
 Function Stop-RSJob {
+    <#
+        .SYNOPSIS
+            Stops a Windows PowerShell runspace job.
+
+        .DESCRIPTION
+            Stops a Windows PowerShell background job that has been started using Start-RSJob
+
+        .PARAMETER Name
+            The name of the jobs to stop..
+
+        .PARAMETER ID
+            The ID of the jobs to stop.
+
+        .PARAMETER InstanceID
+            The GUID of the jobs to stop.
+            
+        .PARAMETER Job
+            The job object to stop.         
+
+        .NOTES
+            Name: Stop-RSJob
+            Author: Boe Prox                
+
+        .EXAMPLE
+            Get-RSJob -State Completed | Stop-RSJob
+
+            Description
+            -----------
+            Stop all jobs with a State of Completed.
+
+        .EXAMPLE
+            Stop-RSJob -ID 1,5,78
+
+            Description
+            -----------
+            Stop jobs with IDs 1,5,78.
+    #>
     [cmdletbinding(
         DefaultParameterSetName='Job'
     )]
@@ -75,9 +112,11 @@ Function Stop-RSJob {
             $ToStop = $List
         }
         [System.Threading.Monitor]::Enter($Jobs.syncroot) 
-        $ToStop | ForEach {
+        $ToStop | ForEach {            
             Write-Verbose "Stopping $($_.InstanceId)"
-            [void]$_.InnerJob.Dispose()
+            If ($_.State -ne 'Completed') {
+                [void]$_.InnerJob.EndInvoke($_.Handle)
+            }
         }
         [System.Threading.Monitor]::Exit($Jobs.syncroot) 
     }  
