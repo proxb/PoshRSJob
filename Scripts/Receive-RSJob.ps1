@@ -1,4 +1,39 @@
 Function Receive-RSJob {
+    <#
+        .SYNOPSIS
+            Gets the results of the Windows PowerShell runspace jobs in the current session.
+
+        .DESCRIPTION
+            Gets the results of the Windows PowerShell runspace jobs in the current session. You can use
+            Get-RSJob and pipe the results into this function to get the results as well.
+
+        .PARAMETER Name
+            The name of the jobs to receive available data from.
+
+        .PARAMETER ID
+            The ID of the jobs to receive available data from.
+
+        .PARAMETER InstanceID
+            The GUID of the jobs to receive available data from.          
+
+        .NOTES
+            Name: Receive-RSJob
+            Author: Boe Prox                
+
+        .EXAMPLE
+            Get-RSJob -State Completed | Receive-RSJob
+
+            Description
+            -----------
+            Retrieves any available data that is outputted from completed RSJobs.
+
+        .EXAMPLE
+            Receive-RSJob -ID 1,5,78
+
+            Description
+            -----------
+            Receives data from RSJob with IDs 1,5,78.
+    #>
     [cmdletbinding(
         DefaultParameterSetName='Job'
     )]
@@ -68,8 +103,8 @@ Function Receive-RSJob {
         If ($ScriptBlock) {
             $jobs | Where $ScriptBlock | Select -ExpandProperty Output
         } Else {
-            $List | ForEach-Object {
-                $_.Output
+            ForEach ($Item in $list) {
+                $Item.Output
             }
         }
     }
