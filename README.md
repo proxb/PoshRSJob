@@ -1,4 +1,4 @@
-PoshRSJob
+PoshRSJob (0.9.3.0)
 ============
 
 Provides an alternative to PSjobs with greater performance and less overhead to run commands in the background, freeing up the console.
