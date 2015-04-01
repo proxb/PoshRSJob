@@ -201,7 +201,9 @@ Function ConvertScript {
     Param (
         [scriptblock]$ScriptBlock
     )
-    $UsingVariables = GetUsingVariables -ScriptBlock $ScriptBlock
+    $UsingVariables = GetUsingVariables -ScriptBlock $ScriptBlock | Group SubExpression | ForEach {
+        $_.Group | Select -First 1
+    }
     If ($UsingVariables) {
         $List = New-Object 'System.Collections.Generic.List`1[System.Management.Automation.Language.VariableExpressionAst]'
         ForEach ($Ast in $UsingVariables) {
