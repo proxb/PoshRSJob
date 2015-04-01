@@ -78,7 +78,7 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
                     $job.Error = $ErrorList
                 }
                 $job.InnerJob.dispose()   
-                If (-NOT([string]::IsNullOrEmpty($Data))) {
+                If (Get-Variable data) {
                     $job.output = $data
                     $job.HasMoreData = $True
                     Remove-Variable data
@@ -208,7 +208,7 @@ Function ConvertScript {
             [void]$list.Add($Ast.SubExpression)
         }
         $UsingVariableData = GetUsingVariableValues $UsingVariables
-        $NewParams = ($UsingVariableData.NewName | Select -Unique) -join ', '
+        $NewParams = $UsingVariableData.NewName -join ', '
         $Tuple=[Tuple]::Create($list,$NewParams)
         $bindingFlags = [Reflection.BindingFlags]"Default,NonPublic,Instance"
 
