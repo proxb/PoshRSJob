@@ -208,7 +208,7 @@ Function ConvertScript {
             [void]$list.Add($Ast.SubExpression)
         }
         $UsingVariableData = GetUsingVariableValues $UsingVariables
-        $NewParams = $UsingVariableData.NewName -join ', '
+        $NewParams = ($UsingVariableData.NewName | Select -Unique) -join ', '
         $Tuple=[Tuple]::Create($list,$NewParams)
         $bindingFlags = [Reflection.BindingFlags]"Default,NonPublic,Instance"
 
