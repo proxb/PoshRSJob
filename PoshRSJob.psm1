@@ -78,7 +78,7 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
                     $job.Error = $ErrorList
                 }
                 $job.InnerJob.dispose()   
-                If (Get-Variable data) {
+                If (-NOT([string]::IsNullOrEmpty($Data))) {
                     $job.output = $data
                     $job.HasMoreData = $True
                     Remove-Variable data
