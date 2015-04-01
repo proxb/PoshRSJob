@@ -129,7 +129,7 @@ Function Start-RSJob {
     #>
     [OutputType('PoshRS.PowerShell.RSJob')]
     [cmdletbinding(
-        DefaultParameterSetName = 'All'
+        DefaultParameterSetName = 'ScriptBlock'
     )]
     Param (
         [parameter(Position=0,ParameterSetName = 'ScriptBlock')]
@@ -215,7 +215,9 @@ Function Start-RSJob {
             }
             Default {
                 Write-Debug "Using AST with PowerShell V3+"
-                $UsingVariables = GetUsingVariables $ScriptBlock
+                $UsingVariables = GetUsingVariables $ScriptBlock | Group SubExpression | ForEach {
+                    $_.Group | Select -First 1
+                }
                 If ($UsingVariables) {                    
                     $UsingVariableValues = @(GetUsingVariableValues $UsingVariables)
                     Write-Verbose "Found $($UsingVariableValues.Count) Using values"

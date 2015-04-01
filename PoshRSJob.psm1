@@ -78,7 +78,7 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
                     $job.Error = $ErrorList
                 }
                 $job.InnerJob.dispose()   
-                If (Get-Variable data) {
+                If ((Get-Variable data).Value) {
                     $job.output = $data
                     $job.HasMoreData = $True
                     Remove-Variable data
@@ -208,12 +208,15 @@ Function ConvertScript {
             [void]$list.Add($Ast.SubExpression)
         }
         $UsingVariableData = GetUsingVariableValues $UsingVariables
-        $NewParams = $UsingVariableData.NewName -join ', '
+        $NewParams = ($UsingVariableData.NewName | Select -Unique) -join ', '
         $Tuple=[Tuple]::Create($list,$NewParams)
         $bindingFlags = [Reflection.BindingFlags]"Default,NonPublic,Instance"
 
         $GetWithInputHandlingForInvokeCommandImpl = ($ScriptBlock.ast.gettype().GetMethod('GetWithInputHandlingForInvokeCommandImpl',$bindingFlags))
         $StringScriptBlock = $GetWithInputHandlingForInvokeCommandImpl.Invoke($ScriptBlock.ast,@($Tuple))
+        If ([scriptblock]::Create($StringScriptBlock).ast.endblock[0].statements.extent.text.startswith('$input |')) {
+            $StringScriptBlock = $StringScriptBlock -replace '\$Input \|'
+        }
         If (-NOT $ScriptBlock.Ast.ParamBlock) {
             $StringScriptBlock = "Param($($NewParams))`n$($StringScriptBlock)"
             [scriptblock]::Create($StringScriptBlock)
