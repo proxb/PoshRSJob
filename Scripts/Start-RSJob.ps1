@@ -129,7 +129,7 @@ Function Start-RSJob {
     #>
     [OutputType('PoshRS.PowerShell.RSJob')]
     [cmdletbinding(
-        DefaultParameterSetName = 'All'
+        DefaultParameterSetName = 'ScriptBlock'
     )]
     Param (
         [parameter(Position=0,ParameterSetName = 'ScriptBlock')]
