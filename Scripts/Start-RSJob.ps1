@@ -215,7 +215,9 @@ Function Start-RSJob {
             }
             Default {
                 Write-Debug "Using AST with PowerShell V3+"
-                $UsingVariables = GetUsingVariables $ScriptBlock
+                $UsingVariables = GetUsingVariables $ScriptBlock | Group SubExpression | ForEach {
+                    $_.Group | Select -First 1
+                }
                 If ($UsingVariables) {                    
                     $UsingVariableValues = @(GetUsingVariableValues $UsingVariables)
                     Write-Verbose "Found $($UsingVariableValues.Count) Using values"
