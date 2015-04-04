@@ -117,13 +117,12 @@ Function Remove-RSJob {
         [System.Threading.Monitor]::Enter($Jobs.syncroot) 
         $ToRemove | ForEach {
             If ($PSCmdlet.ShouldProcess("Name: $($_.Name), associated with JobID $($_.Id)",'Remove')) {
-                #Write-Verbose "Removing $($_.InstanceId)"
-                If ($_.State -ne 'Completed') {
+                If ($_.State -notmatch 'Completed|Failed') {
                     If ($PSBoundParameters.ContainsKey('Force')) {
                         $_.InnerJob.EndInvoke($_.Handle)
                         $Jobs.Remove($_)
                     } Else {
-                        Throw "Unable to remove job $($_.InstanceID)"
+                        Write-Error "Unable to remove job $($_.InstanceID)"
                     }
                 } Else {
                     [void]$jobs.Remove($_)

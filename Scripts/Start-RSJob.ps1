@@ -267,9 +267,10 @@ Function Start-RSJob {
                     Handle = $Handle
                     InnerJob = $PowerShell
                     Runspace = $PowerShell.Runspace
-                    Finished = $handle.RSWaitHandle
+                    Finished = $handle.IsCompleted
                     Command  = $ScriptBlock.ToString()
                     RunspacePoolID = $RunSpacePoolID
+                    State = [System.Management.Automation.PSInvocationState]::Running
                 }
 
                 [System.Threading.Monitor]::Enter($Jobs.syncroot) 
