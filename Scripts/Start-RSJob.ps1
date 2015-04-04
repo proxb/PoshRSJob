@@ -272,7 +272,8 @@ Function Start-RSJob {
                     RunspacePoolID = $RunSpacePoolID
                     State = [System.Management.Automation.PSInvocationState]::Running
                 }
-
+                
+                $RSPObject.LastActivity = Get-Date
                 [System.Threading.Monitor]::Enter($Jobs.syncroot) 
                 [void]$Jobs.Add($Object)
                 [System.Threading.Monitor]::Exit($Jobs.syncroot) 
@@ -307,7 +308,8 @@ Function Start-RSJob {
                 Command  = $ScriptBlock.ToString()
                 RunspacePoolID = $RunSpacePoolID
             }
-
+            
+            $RSPObject.LastActivity = Get-Date
             [System.Threading.Monitor]::Enter($Jobs.syncroot) 
             [void]$Jobs.Add($Object)
             [System.Threading.Monitor]::Exit($Jobs.syncroot) 
