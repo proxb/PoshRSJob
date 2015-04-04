@@ -10,6 +10,7 @@ Add-Type -TypeDefinition @"
         {
             public string Name;
             public int ID;
+            public System.Management.Automation.PSInvocationState State;
             public System.Guid InstanceID;
             public object Handle;
             public object Runspace;
@@ -68,7 +69,8 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
     Do {   
         [System.Threading.Monitor]::Enter($Jobs.syncroot) 
         Foreach($job in $jobs) {
-            If ($job.Handle.isCompleted) {
+            $job.state = $job.InnerJob.InvocationStateInfo.State
+            If ($job.Handle.isCompleted) {                
                 $data = $job.InnerJob.EndInvoke($job.Handle)
                 If ($job.InnerJob.Streams.Error) {
                     $ErrorList = New-Object System.Management.Automation.PSDataCollection[System.Management.Automation.ErrorRecord]

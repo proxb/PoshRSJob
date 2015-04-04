@@ -14,17 +14,6 @@
     <Name>PoshRS.PowerShell.RSJob</Name>
     <Members>
       <ScriptProperty>
-        <Name>State</Name>
-        <GetScriptBlock>
-            $this.innerjob.InvocationStateInfo.State
-        </GetScriptBlock>
-      </ScriptProperty>
-    </Members>
-  </Type>
-  <Type>
-    <Name>PoshRS.PowerShell.RSJob</Name>
-    <Members>
-      <ScriptProperty>
         <Name>Verbose</Name>
         <GetScriptBlock>
           $this.InnerJob.Streams.Verbose
@@ -50,6 +39,17 @@
         <Name>Warning</Name>
         <GetScriptBlock>
           $this.InnerJob.Streams.Warning
+        </GetScriptBlock>
+      </ScriptProperty>
+    </Members>
+  </Type>
+  <Type>
+    <Name>PoshRS.PowerShell.RSJob</Name>
+    <Members>
+      <ScriptProperty>
+        <Name>Error</Name>
+        <GetScriptBlock>
+          $this.InnerJob.Streams.Error
         </GetScriptBlock>
       </ScriptProperty>
     </Members>
