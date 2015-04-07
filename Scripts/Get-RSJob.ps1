@@ -79,7 +79,7 @@ Function Get-RSJob {
         [parameter(ParameterSetName='Id')]
         [parameter(ParameterSetName='Guid')]
         [parameter(ParameterSetName='All')]
-        [Switch]$HasMoreData
+        [Switch]$HasMoreData,
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
         [PoshRS.PowerShell.RSJob[]]$Job        
     )
