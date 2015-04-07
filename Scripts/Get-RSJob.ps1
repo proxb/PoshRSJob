@@ -80,6 +80,8 @@ Function Get-RSJob {
         [parameter(ParameterSetName='Guid')]
         [parameter(ParameterSetName='All')]
         [Switch]$HasMoreData
+        [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
+        [PoshRS.PowerShell.RSJob[]]$Job        
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
@@ -98,7 +100,10 @@ Function Get-RSJob {
         }
         If ($PSBoundParameters['InstanceId']) {
             [void]$list.AddRange($InstanceId)
-        }        
+        }
+        If ($PSBoundParameters['Job']){
+            [void]$list.AddRange($Job)
+        }                
     }
     Process {
         If ($PSCmdlet.ParameterSetName -ne 'All') {
@@ -120,6 +125,10 @@ Function Get-RSJob {
                 $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.InstanceId -match $Items")  
             }
+            'Job' {
+                $Items = '"{0}"' -f (($list.id | ForEach {"^{0}$" -f $_}) -join '|')
+                [void]$WhereList.Add("`$_.id -match $Items")
+            }            
         }
         If ($PSBoundParameters['State']) {
             [void]$WhereList.Add("`$_.State -match `"$($State -join '|')`"")
