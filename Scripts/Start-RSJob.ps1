@@ -186,7 +186,7 @@ Function Start-RSJob {
         }
         $RunspacePool.Open()
         If ($PSBoundParameters['FilePath']) {
-            $ScriptBlock = [scriptblock]::Create((Get-Content $FilePath))
+            $ScriptBlock = [scriptblock]::Create((Get-Content $FilePath | Out-String))
         }
         $RSPObject = New-Object PoshRS.PowerShell.RSRunspacePool -Property @{
             RunspacePool = $RunspacePool
