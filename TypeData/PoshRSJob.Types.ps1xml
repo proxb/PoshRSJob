@@ -47,17 +47,6 @@
     <Name>PoshRS.PowerShell.RSJob</Name>
     <Members>
       <ScriptProperty>
-        <Name>Error</Name>
-        <GetScriptBlock>
-          $this.InnerJob.Streams.Error
-        </GetScriptBlock>
-      </ScriptProperty>
-    </Members>
-  </Type>
-  <Type>
-    <Name>PoshRS.PowerShell.RSJob</Name>
-    <Members>
-      <ScriptProperty>
         <Name>Progress</Name>
         <GetScriptBlock>
           $this.InnerJob.Streams.Progress
