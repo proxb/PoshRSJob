@@ -1,23 +1,17 @@
-Function Wait-RSJob {
+﻿Function Wait-RSJob {
     <#
         .SYNOPSIS
             Waits until all RSJobs are in one of the following states: 
-
         .DESCRIPTION
             Waits until all RSJobs are in one of the following states:
-
         .PARAMETER Name
             The name of the jobs to query for.
-
         .PARAMETER ID
             The ID of the jobs that you want to wait for.
-
         .PARAMETER InstanceID
             The GUID of the jobs that you want to wait for.
-
         .PARAMETER State
             The State of the job that you want to wait for. Accepted values are:
-
             NotStarted
             Running
             Completed
@@ -25,26 +19,20 @@ Function Wait-RSJob {
             Stopping
             Stopped
             Disconnected
-
         .PARAMETER HasMoreData
             Waits for jobs that have data being outputted. You can specify -HasMoreData:$False to wait for jobs
             that have no data to output.
-
 		.PARAMETER Timeout
 			Timeout after specified number of seconds
-
         .NOTES
             Name: Wait-RSJob
             Author: Ryan Bushe/
 			Notes: This function is a slightly modified version of Get-RSJob by Boe Prox.(~10 lines of code changed)
-
         .EXAMPLE
             Get-RSJob | Wait-RSJob
-
             Description
             -----------
             Waits for jobs which have to be completed.
-
     #>
     [cmdletbinding(
         DefaultParameterSetName='All'
@@ -134,16 +122,23 @@ Function Wait-RSJob {
         If ($ScriptBlock) {
             Write-Debug "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
+            $FilteredJobs = $Jobs | Where $ScriptBlock
 			$Date = Get-Date
 			Do{
-				$Waitjobs = $Jobs | ? $ScriptBlock | ? State -NotLike Completed | ? State -NotLike Failed | ? State -NotLike Stopped | ? State -NotLike Suspended | ? State -NotLike Disconnected
+				$Waitjobs = $FilteredJobs | Where $ScriptBlock | Where {
+                    $_.State -notmatch 'Completed|Failed|Stopped|Suspended|Disconnected'
+                }
 				Write-Verbose "$($Waitjobs.Count) Jobs Left"
 				if($Timeout){
 					if((New-Timespan $Date).TotalSeconds -ge $Timeout){
-						break;
+						$TimedOut = $True
+                        break;
 					}
 				}
 			}While($Waitjobs.Count -ne 0)
+        }
+        If (-NOT $TimedOut) {
+            $FilteredJobs
         }
     }
 }
