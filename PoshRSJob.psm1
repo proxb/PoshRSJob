@@ -371,4 +371,4 @@ $ExecutionContext.SessionState.Module.OnRemove ={
 }
 #endregion Handle Module Removal
 
-Export-ModuleMember -Alias * -Function 'Start-RSJob','Stop-RSJob','Remove-RSJob','Get-RSJob','Receive-RSJob'
+Export-ModuleMember -Alias * -Function '*-RSJob'
