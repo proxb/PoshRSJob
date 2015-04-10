@@ -1,4 +1,4 @@
-﻿Function Wait-RSJob {
+Function Wait-RSJob {
     <#
         .SYNOPSIS
             Waits until all RSJobs are in one of the following states: 
