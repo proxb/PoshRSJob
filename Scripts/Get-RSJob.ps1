@@ -136,14 +136,15 @@ Function Get-RSJob {
         If ($PSBoundParameters.ContainsKey('HasMoreData')) {
             [void]$WhereList.Add("`$_.HasMoreData -eq `$$HasMoreData")
         }
+        Write-Debug "WhereListCount: $($WhereList.count)"
         If ($WhereList.count -gt 0) {
             $WhereString = $WhereList -join ' -AND '
-            $ScriptBlock = [scriptblock]::Create($WhereString)
+            $WhereBlock = [scriptblock]::Create($WhereString)
         }               
-        If ($ScriptBlock) {
+        If ($WhereBlock) {
             Write-Debug "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
-            $Jobs | Where $ScriptBlock 
+            $Jobs | Where $WhereBlock 
         } Else {$Jobs}
     }
 }

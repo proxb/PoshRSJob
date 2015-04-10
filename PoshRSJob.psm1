@@ -183,7 +183,7 @@ Function GetUsingVariables {
 
 Function GetUsingVariableValues {
     Param ([System.Management.Automation.Language.UsingExpressionAst[]]$UsingVar)
-    $UsingVar = $UsingVar | Group Parent | ForEach {$_.Group | Select -First 1}
+    $UsingVar = $UsingVar | Group SubExpression | ForEach {$_.Group | Select -First 1}
     ForEach ($Var in $UsingVar) {
         Try {
             $Value = Get-Variable -Name $Var.SubExpression.VariablePath.UserPath -ErrorAction Stop
@@ -205,21 +205,18 @@ Function ConvertScript {
     )
     $UsingVariables = GetUsingVariables -ScriptBlock $ScriptBlock
     $List = New-Object 'System.Collections.Generic.List`1[System.Management.Automation.Language.VariableExpressionAst]'
+    $Params = New-Object System.Collections.ArrayList
+    If ($Script:Add_) {
+        [void]$Params.Add('$_')
+    }
     If ($UsingVariables) {        
         ForEach ($Ast in $UsingVariables) {
             [void]$list.Add($Ast.SubExpression)
         }
         $UsingVariableData = GetUsingVariableValues $UsingVariables
-        If ($Script:Add_) {
-            $NewParams = ('$_',($UsingVariableData.NewName | Select -Unique)) -join ', '
-        } Else {
-            $NewParams = ($UsingVariableData.NewName | Select -Unique) -join ', '
-        }
-    } Else {
-        If ($Script:Add_) {
-            $NewParams = '$_'
-        } 
-    }
+        [void]$Params.AddRange(($UsingVariableData.NewName | Select -Unique))
+    } 
+    $NewParams = $Params -join ', '
     $Tuple=[Tuple]::Create($list,$NewParams)
     $bindingFlags = [Reflection.BindingFlags]"Default,NonPublic,Instance"
 
@@ -288,13 +285,14 @@ Function ConvertScriptBlockV2 {
         $UsingHash["Using:$($_.Name)"] = $_.NewVarName
     }
     $HasParam = IsExistingParamBlock -ScriptBlock $ScriptBlock
-    If ($Script:Add_ -AND $UsingVariable) {
-        $NewParams = ('$_',($UsingVariable.NewName | Select -Unique)) -join ', '
-    } ElseIf ($UsingVariable) {
-        $NewParams = ($UsingVariable.NewName | Select -Unique) -join ', '
-    } ElseIf ($Script:Add_) {
-        $NewParams = '$_'
-    }   
+    $Params = New-Object System.Collections.ArrayList
+    If ($Script:Add_) {
+        [void]$Params.Add('$_')
+    }
+    If ($UsingVariable) {        
+        [void]$Params.AddRange(($UsingVariable | Select -expand NewName))
+    } 
+    $NewParams = $Params -join ', '  
     If (-Not $HasParam) {
         [void]$StringBuilder.Append("Param($($NewParams))")
     }
@@ -357,6 +355,7 @@ Function ConvertScriptBlockV2 {
     #$StringBuilder.ToString()
     [scriptblock]::Create($StringBuilder.ToString())
 }
+
 Function GetParamVariable {
     [CmdletBinding()]
     param (

@@ -33,6 +33,9 @@ Function Start-RSJob {
         .PARAMETER ModulesToImport
             A collection of modules that will be imported into the background runspace job.
 
+        .PARAMETER PSSnapinsToImport
+            A collection of PSSnapins that will be imported into the background runspace job.
+
         .PARAMETER FunctionsToImport
             A collection of functions that will be imported for use with a background runspace job.
 
@@ -126,6 +129,28 @@ Function Start-RSJob {
             -----------
             Shows an example of the $Using: variable being used in the scriptblock.
 
+        .EXAMPLE
+            $Test = 42
+            $AnotherTest = 7
+            $String = 'SomeString'
+            $ProcName = 'powershell_ise'
+            $ScriptBlock = {
+                Param($y,$z)
+                [pscustomobject] @{
+                    Test = $y
+                    Proc = (Get-Process -Name $Using:ProcName)
+                    String = $Using:String
+                    AnotherTest = ($z+$_)
+                    PipedObject = $_
+                }
+            }
+
+            1..5|Start-RSJob $ScriptBlock -ArgumentList $test, $anothertest
+            
+            Description
+            -----------
+            Shows an example of the $Using: variable being used in the scriptblock as well as $_ and multiple -ArgumentList parameters.
+
     #>
     [OutputType('PoshRS.PowerShell.RSJob')]
     [cmdletbinding(
@@ -146,6 +171,8 @@ Function Start-RSJob {
         [int]$Throttle = 5,
         [parameter()]
         [string[]]$ModulesToImport,
+        [parameter()]
+        [string[]]$PSSnapinsToImport,
         [parameter()]
         [string[]]$FunctionsToLoad
     )
@@ -168,6 +195,9 @@ Function Start-RSJob {
         $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
         If ($PSBoundParameters['ModulesToImport']) {
             [void]$InitialSessionState.ImportPSModule($ModulesToImport)
+        }
+        If ($PSBoundParameters['PSSnapinsToImport']) {
+            [void]$InitialSessionState.ImportPSSnapIn($PSSnapinsToImport,[ref]$Null)
         }
         If ($PSBoundParameters['FunctionsToLoad']) {
             ForEach ($Function in $FunctionsToLoad) {
