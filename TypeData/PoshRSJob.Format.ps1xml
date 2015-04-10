@@ -9,7 +9,7 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Id</Label>
-            <Width>3</Width>
+            <Width>8</Width>
             <Alignment>Left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>

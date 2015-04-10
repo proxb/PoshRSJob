@@ -204,55 +204,39 @@ Function ConvertScript {
         [scriptblock]$ScriptBlock
     )
     $UsingVariables = GetUsingVariables -ScriptBlock $ScriptBlock
-    If ($UsingVariables) {
-        $List = New-Object 'System.Collections.Generic.List`1[System.Management.Automation.Language.VariableExpressionAst]'
+    $List = New-Object 'System.Collections.Generic.List`1[System.Management.Automation.Language.VariableExpressionAst]'
+    If ($UsingVariables) {        
         ForEach ($Ast in $UsingVariables) {
             [void]$list.Add($Ast.SubExpression)
         }
         $UsingVariableData = GetUsingVariableValues $UsingVariables
-        $NewParams = ($UsingVariableData.NewName | Select -Unique) -join ', '
-        $Tuple=[Tuple]::Create($list,$NewParams)
-        $bindingFlags = [Reflection.BindingFlags]"Default,NonPublic,Instance"
-
-        $GetWithInputHandlingForInvokeCommandImpl = ($ScriptBlock.ast.gettype().GetMethod('GetWithInputHandlingForInvokeCommandImpl',$bindingFlags))
-        $StringScriptBlock = $GetWithInputHandlingForInvokeCommandImpl.Invoke($ScriptBlock.ast,@($Tuple))
-        If ([scriptblock]::Create($StringScriptBlock).ast.endblock[0].statements.extent.text.startswith('$input |')) {
-            $StringScriptBlock = $StringScriptBlock -replace '\$Input \|'
-        }
-        If (-NOT $ScriptBlock.Ast.ParamBlock) {
-            $StringScriptBlock = "Param($($NewParams))`n$($StringScriptBlock)"
-            [scriptblock]::Create($StringScriptBlock)
+        If ($Script:Add_) {
+            $NewParams = ('$_',($UsingVariableData.NewName | Select -Unique)) -join ', '
         } Else {
-            [scriptblock]::Create($StringScriptBlock)
+            $NewParams = ($UsingVariableData.NewName | Select -Unique) -join ', '
         }
     } Else {
-        $ScriptBlock
+        If ($Script:Add_) {
+            $NewParams = '$_'
+        } 
+    }
+    $Tuple=[Tuple]::Create($list,$NewParams)
+    $bindingFlags = [Reflection.BindingFlags]"Default,NonPublic,Instance"
+
+    $GetWithInputHandlingForInvokeCommandImpl = ($ScriptBlock.ast.gettype().GetMethod('GetWithInputHandlingForInvokeCommandImpl',$bindingFlags))
+    $StringScriptBlock = $GetWithInputHandlingForInvokeCommandImpl.Invoke($ScriptBlock.ast,@($Tuple))
+    If ([scriptblock]::Create($StringScriptBlock).ast.endblock[0].statements.extent.text.startswith('$input |')) {
+        $StringScriptBlock = $StringScriptBlock -replace '\$Input \|'
+    }
+    If (-NOT $ScriptBlock.Ast.ParamBlock) {
+        $StringScriptBlock = "Param($($NewParams))`n$($StringScriptBlock)"
+        [scriptblock]::Create($StringScriptBlock)
+    } Else {
+        [scriptblock]::Create($StringScriptBlock)
     }
 }
 
-Function GetUsingVariablesV2 {
-    Param ([scriptblock]$ScriptBlock)
-    $errors = [System.Management.Automation.PSParseError[]] @()
-    $Results = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)
-    $Results | Where {
-        $_.Content -match '^Using:' -AND $_.Type -eq 'Variable'
-    }
-}
-
-Function GetUsingVariableValuesV2 {
-    Param ([System.Management.Automation.PSToken[]]$UsingVar)
-    $UsingVar | ForEach {
-        $Name = $_.Content.Trim('Using:')
-        New-Object PoshRS.PowerShell.V2UsingVariable -Property @{
-            Name = $Name
-            NewName = '$__using_{0}' -f $Name
-            Value = (Get-Variable -Name $Name).Value
-            NewVarName = ('__using_{0}') -f $Name
-        }
-    }
-}
-
-Function IsExistingParamV2 {
+Function IsExistingParamBlock {
     Param([scriptblock]$ScriptBlock)
     $errors = [System.Management.Automation.PSParseError[]] @()
     $Tokens = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)       
@@ -270,8 +254,32 @@ Function IsExistingParamV2 {
     }
 }
 
+Function GetUsingVariablesV2 {
+    Param ([scriptblock]$ScriptBlock)
+    $errors = [System.Management.Automation.PSParseError[]] @()
+    $Results = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)
+    $Results | Where {
+        $_.Content -match '^Using:' -AND $_.Type -eq 'Variable'
+    }
+}
+
+Function GetUsingVariableValuesV2 {
+    Param ([System.Management.Automation.PSToken[]]$UsingVar)
+    $UsingVar | ForEach {
+        $Name = $_.Content -replace 'Using:'
+        New-Object PoshRS.PowerShell.V2UsingVariable -Property @{
+            Name = $Name
+            NewName = '$__using_{0}' -f $Name
+            Value = (Get-Variable -Name $Name).Value
+            NewVarName = ('__using_{0}') -f $Name
+        }
+    }
+}
+
 Function ConvertScriptBlockV2 {
-    Param ([scriptblock]$ScriptBlock,[PoshRS.PowerShell.V2UsingVariable[]]$UsingVariable)
+    Param ([scriptblock]$ScriptBlock)
+    $UsingVariables = GetUsingVariablesV2 -ScriptBlock $ScriptBlock
+    $UsingVariable = GetUsingVariableValuesV2 -UsingVar $UsingVariables
     $errors = [System.Management.Automation.PSParseError[]] @()
     $Tokens = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)
     $StringBuilder = New-Object System.Text.StringBuilder
@@ -279,14 +287,20 @@ Function ConvertScriptBlockV2 {
     $UsingVariable | ForEach {
         $UsingHash["Using:$($_.Name)"] = $_.NewVarName
     }
-    $NewParams = ($UsingVariable | Select -expand NewName) -join ', '
-    $HasParam = IsExistingParamV2 -ScriptBlock $ScriptBlock
+    $HasParam = IsExistingParamBlock -ScriptBlock $ScriptBlock
+    If ($Script:Add_ -AND $UsingVariable) {
+        $NewParams = ('$_',($UsingVariable.NewName | Select -Unique)) -join ', '
+    } ElseIf ($UsingVariable) {
+        $NewParams = ($UsingVariable.NewName | Select -Unique) -join ', '
+    } ElseIf ($Script:Add_) {
+        $NewParams = '$_'
+    }   
     If (-Not $HasParam) {
         [void]$StringBuilder.Append("Param($($NewParams))")
     }
     For ($i=0;$i -lt $Tokens.count; $i++){
-        Write-Verbose "Type: $($Tokens[$i].Type)"
-        Write-Verbose "Previous Line: $($Previous.StartLine) -- Current Line: $($Tokens[$i].StartLine)"
+        #Write-Verbose "Type: $($Tokens[$i].Type)"
+        #Write-Verbose "Previous Line: $($Previous.StartLine) -- Current Line: $($Tokens[$i].StartLine)"
         If ($Previous.StartLine -eq $Tokens[$i].StartLine) {
             $Space = " " * [int]($Tokens[$i].StartColumn - $Previous.EndColumn)
             [void]$StringBuilder.Append($Space)
@@ -343,6 +357,44 @@ Function ConvertScriptBlockV2 {
     #$StringBuilder.ToString()
     [scriptblock]::Create($StringBuilder.ToString())
 }
+Function GetParamVariable {
+    [CmdletBinding()]
+    param (
+        [scriptblock]$ScriptBlock
+    )     
+    # Tokenize the script
+    $tokens = [Management.Automation.PSParser]::Tokenize($ScriptBlock, [ref]$null) | Where {
+        $_.Type -ne 'NewLine'
+    }
+
+    # First Pass - Grab all tokens between the first param block.
+    $paramsearch = $false
+    $groupstart = 0
+    $groupend = 0
+    for ($i = 0; $i -lt $tokens.Count; $i++) {
+        if (!$paramsearch) {
+            if ($tokens[$i].Content -eq "param" ) {
+                $paramsearch = $true
+            }
+        }
+        if ($paramsearch) {
+            if (($tokens[$i].Type -eq "GroupStart") -and ($tokens[$i].Content -eq '(') ) {
+                $groupstart++
+            }
+            if (($tokens[$i].Type -eq "GroupEnd") -and ($tokens[$i].Content -eq ')') ) {
+                $groupend++
+            }
+            if (($groupstart -ge 1) -and ($groupstart -eq $groupend)) {
+                $paramsearch = $false
+            }
+            if (($tokens[$i].Type -eq 'Variable') -and ($tokens[($i-1)].Content -ne '=')) {
+                if ((($groupstart - $groupend) -eq 1)) {
+                    "$($tokens[$i].Content)"
+                }
+            }
+        }
+    }
+}
 #endregion Private Functions
 
 #region Aliases
@@ -351,6 +403,7 @@ New-Alias -Name gsj -Value Get-RSJob
 New-Alias -Name rsj -Value Receive-RSJob
 New-Alias -Name rmsj -Value Remove-RSJob
 New-Alias -Name spsj -Value Stop-RSJob
+New-Alias -Name wsj -Value Wait-RSJob
 #endregion Aliases
 
 #region Handle Module Removal
@@ -371,4 +424,4 @@ $ExecutionContext.SessionState.Module.OnRemove ={
 }
 #endregion Handle Module Removal
 
-Export-ModuleMember -Alias * -Function 'Start-RSJob','Stop-RSJob','Remove-RSJob','Get-RSJob','Receive-RSJob'
+Export-ModuleMember -Alias * -Function '*-RSJob'
