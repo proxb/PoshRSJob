@@ -1,4 +1,4 @@
-﻿Function Wait-RSJob {
+Function Wait-RSJob {
     <#
         .SYNOPSIS
             Waits until all RSJobs are in one of the following states: 
@@ -38,6 +38,8 @@
         DefaultParameterSetName='All'
     )]
     Param (
+        [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
+        [PoshRS.PowerShell.RSJob[]]$Job,
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Name')]
         [string[]]$Name,
@@ -58,15 +60,13 @@
         [parameter(ParameterSetName='Guid')]
         [parameter(ParameterSetName='All')]
         [Switch]$HasMoreData,
-        [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PoshRS.PowerShell.RSJob[]]$Job,
 		[int]$Timeout
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
         }        
-        Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
+        Write-Verbose "ParameterSet: $($PSCmdlet.parametersetname)"
         $List = New-Object System.Collections.ArrayList
         $WhereList = New-Object System.Collections.ArrayList
         
@@ -105,7 +105,7 @@
                 [void]$WhereList.Add("`$_.InstanceId -match $Items")  
             }
             'Job' {
-                $Items = '"{0}"' -f (($list.id | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | Select -Expand id | ForEach {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.id -match $Items")
             }			
         }
@@ -120,24 +120,27 @@
             $ScriptBlock = [scriptblock]::Create($WhereString)
         }               
         If ($ScriptBlock) {
-            Write-Debug "WhereString: $($WhereString)" 
+            Write-Verbose "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
-            $FilteredJobs = $Jobs | Where $ScriptBlock
+            $FilteredJobs = @($list | Where $ScriptBlock)
+            Write-Verbose "$($FilteredJobs.Count)"
 			$Date = Get-Date
 			Do{
-				$Waitjobs = $FilteredJobs | Where $ScriptBlock | Where {
+				$Waitjobs = @($FilteredJobs | Where {
                     $_.State -notmatch 'Completed|Failed|Stopped|Suspended|Disconnected'
-                }
+                })
 				Write-Verbose "$($Waitjobs.Count) Jobs Left"
 				if($Timeout){
 					if((New-Timespan $Date).TotalSeconds -ge $Timeout){
 						$TimedOut = $True
-                        break;
+                        break
 					}
 				}
 			}While($Waitjobs.Count -ne 0)
         }
         If (-NOT $TimedOut) {
+            #Wait just a bit so the HasMoreData can update if needed
+            Start-Sleep -Milliseconds 100
             $FilteredJobs
         }
     }
