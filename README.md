@@ -7,6 +7,8 @@ PoshRSJob (1.0.0.0)
 
 Provides an alternative to PSjobs with greater performance and less overhead to run commands in the background, freeing up the console.
 
+More information and examples here: http://learn-powershell.net/2015/03/31/introducing-poshrsjob-as-an-alternative-to-powershell-jobs/
+
         .EXAMPLE
             $Test = 'test'
             $Something = 1..10
