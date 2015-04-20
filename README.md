@@ -9,8 +9,8 @@ More information and examples here: http://learn-powershell.net/2015/03/31/intro
             $Test = 'test'
             $Something = 1..10
             1..5|start-rsjob -Name {$_} -ScriptBlock {
-                Param($Object) [pscustomobject]@{
-                    Result=($Object*2)
+                [pscustomobject]@{
+                    Result=($_*2)
                     Test=$Using:Test
                     Something=$Using:Something
                 }
