@@ -235,6 +235,8 @@ Function Start-RSJob {
     Process {
         If ($IsPipeline -AND $PSBoundParameters.ContainsKey('InputObject')) {
             [void]$List.Add($InputObject)
+        } Else {
+            $IsPipeline = $False
         }
     }
     End {  
