@@ -24,6 +24,8 @@
             that have no data to output.
 		.PARAMETER Timeout
 			Timeout after specified number of seconds
+        .PARAMETER ShowProgress
+            Displays a progress bar
         .NOTES
             Name: Wait-RSJob
             Author: Ryan Bushe/
