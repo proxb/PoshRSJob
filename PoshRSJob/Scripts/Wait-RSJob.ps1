@@ -1,4 +1,4 @@
-Function Wait-RSJob {
+﻿Function Wait-RSJob {
     <#
         .SYNOPSIS
             Waits until all RSJobs are in one of the following states: 
@@ -40,13 +40,13 @@ Function Wait-RSJob {
     Param (
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
         [PoshRS.PowerShell.RSJob[]]$Job,
-        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
+        [parameter(ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Name')]
         [string[]]$Name,
-        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
+        [parameter(ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Id')]
         [int[]]$Id,
-        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
+        [parameter(ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
         [parameter(ParameterSetName='Name')]
@@ -60,7 +60,8 @@ Function Wait-RSJob {
         [parameter(ParameterSetName='Guid')]
         [parameter(ParameterSetName='All')]
         [Switch]$HasMoreData,
-		[int]$Timeout
+		[int]$Timeout,
+        [switch]$ShowProgress
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
@@ -109,7 +110,7 @@ Function Wait-RSJob {
                 [void]$WhereList.Add("`$_.id -match $Items")
             }			
         }
-        If ($PSBoundParameters['State']) {get-
+        If ($PSBoundParameters['State']) {
             [void]$WhereList.Add("`$_.State -match `"$($State -join '|')`"")
         }
         If ($PSBoundParameters.ContainsKey('HasMoreData')) {
@@ -123,13 +124,22 @@ Function Wait-RSJob {
             Write-Verbose "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
             $FilteredJobs = @($list | Where $ScriptBlock)
+            $TotalJobs = $FilteredJobs.Count
             Write-Verbose "$($FilteredJobs.Count)"
 			$Date = Get-Date
 			Do{
 				$Waitjobs = @($FilteredJobs | Where {
                     $_.State -notmatch 'Completed|Failed|Stopped|Suspended|Disconnected'
                 })
-				Write-Verbose "$($Waitjobs.Count) Jobs Left"
+				Write-Verbose "Wait: $($Waitjobs.Count)"
+                Write-Verbose "Completed: ($Completed)"
+                Write-Verbose "Total: ($Totaljobs)"
+                Write-Verbose "Status: $($Completed.count/$TotalJobs)"
+
+                $Completed = $TotalJobs - $Waitjobs.count
+                If ($PSBoundParameters.ContainsKey('ShowProgress')) {
+                    Write-Progress -Activity "RSJobs Tracker" -Status ("Remaining Jobs: {0}" -f $Waitjobs.count) -PercentComplete (($Completed/$TotalJobs)*100)
+                }
 				if($Timeout){
 					if((New-Timespan $Date).TotalSeconds -ge $Timeout){
 						$TimedOut = $True
