@@ -133,12 +133,11 @@
 				$Waitjobs = @($FilteredJobs | Where {
                     $_.State -notmatch 'Completed|Failed|Stopped|Suspended|Disconnected'
                 })
+                $Completed = $TotalJobs - $Waitjobs.count
 				Write-Verbose "Wait: $($Waitjobs.Count)"
                 Write-Verbose "Completed: ($Completed)"
                 Write-Verbose "Total: ($Totaljobs)"
                 Write-Verbose "Status: $($Completed.count/$TotalJobs)"
-
-                $Completed = $TotalJobs - $Waitjobs.count
                 If ($PSBoundParameters.ContainsKey('ShowProgress')) {
                     Write-Progress -Activity "RSJobs Tracker" -Status ("Remaining Jobs: {0}" -f $Waitjobs.count) -PercentComplete (($Completed/$TotalJobs)*100)
                 }
