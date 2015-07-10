@@ -45,7 +45,7 @@ Add-Type -TypeDefinition @"
             public string NewVarName;
         }
     }
-"@ -Language CSharpVersion3
+"@ -Language CSharp
 #endregion Custom Object
 
 #region RSJob Collections
