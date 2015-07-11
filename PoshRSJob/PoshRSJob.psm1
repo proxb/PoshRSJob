@@ -26,6 +26,7 @@ Add-Type -TypeDefinition @"
             public bool HasErrors;
             public object Output;
             public System.Guid RunspacePoolID;
+            public bool Completed = false;
         }
         public class RSRunspacePool
         {
@@ -45,7 +46,7 @@ Add-Type -TypeDefinition @"
             public string NewVarName;
         }
     }
-"@ -Language CSharp
+"@ -Language CSharpVersion3
 #endregion Custom Object
 
 #region RSJob Collections
@@ -60,6 +61,7 @@ New-Variable RunspacePoolCleanup -Value ([hashtable]::Synchronized(@{})) -Option
 #region Cleanup Routine
 Write-Verbose "Creating routine to monitor RS jobs"
 $jobCleanup.Flag=$True
+$jobCleanup.Host = $Host
 $jobcleanup.Runspace =[runspacefactory]::CreateRunspace()   
 $jobcleanup.Runspace.Open()         
 $jobcleanup.Runspace.SessionStateProxy.SetVariable("jobCleanup",$jobCleanup)     
@@ -70,21 +72,41 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
         [System.Threading.Monitor]::Enter($Jobs.syncroot) 
         Foreach($job in $jobs) {
             $job.state = $job.InnerJob.InvocationStateInfo.State
-            If ($job.Handle.isCompleted) {                
-                $data = $job.InnerJob.EndInvoke($job.Handle)
-                If ($job.InnerJob.Streams.Error) {
+            If ($job.Handle.isCompleted -AND (-NOT $Job.Completed)) {   
+                #$jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) completed")  
+                Try {           
+                    $data = $job.InnerJob.EndInvoke($job.Handle)
+                } Catch {
+                    $CaughtErrors = $Error
+                    #$jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Caught terminating Error in job: $_") 
+                }
+                #$jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Checking for errors") 
+                If ($job.InnerJob.Streams.Error -OR $CaughtErrors) {
+                    #$jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Errors Found!")
                     $ErrorList = New-Object System.Management.Automation.PSDataCollection[System.Management.Automation.ErrorRecord]
-                    ForEach ($Err in $job.InnerJob.Streams.Error) {
-                        [void]$ErrorList.Add($Err)
+                    If ($job.InnerJob.Streams.Error) {
+                        ForEach ($Err in $job.InnerJob.Streams.Error) {
+                            #$jobCleanup.Host.UI.WriteVerboseLine("`t$($Job.Id) Adding Error")             
+                            [void]$ErrorList.Add($Err)
+                        }
+                    }
+                    If ($CaughtErrors) {
+                        ForEach ($Err in $CaughtErrors) {
+                            #$jobCleanup.Host.UI.WriteVerboseLine("`t$($Job.Id) Adding Error")             
+                            [void]$ErrorList.Add($Err)
+                        }                    
                     }
                     $job.Error = $ErrorList
                 }
-                $job.InnerJob.dispose()   
-                If ((Get-Variable data).Value) {
+                #$jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Disposing job")
+                $job.InnerJob.dispose() 
+                $job.Completed = $True  
+                If ((Get-Variable data -ErrorAction SilentlyContinue).Value) {
                     $job.output = $data
                     $job.HasMoreData = $True
-                    Remove-Variable data
+                    Remove-Variable data -ErrorAction SilentlyContinue                    
                 }                            
+                $Error.Clear()
             } 
         }        
         [System.Threading.Monitor]::Exit($Jobs.syncroot)
