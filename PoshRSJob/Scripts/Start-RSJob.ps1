@@ -211,6 +211,7 @@ Function Start-RSJob {
             }           
         }
         $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
+        $RunspacePool.ApartmentState = 'STA'
         [void]$RunspacePool.SetMaxRunspaces($Throttle)
         If ($PSVersionTable.PSVersion.Major -gt 2) {
             $RunspacePool.CleanupInterval = [timespan]::FromMinutes(2)    
