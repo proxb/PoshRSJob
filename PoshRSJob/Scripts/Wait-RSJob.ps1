@@ -34,7 +34,7 @@
             Get-RSJob | Wait-RSJob
             Description
             -----------
-            Waits for jobs which have to be completed.
+            Waits for jobs which have to be completed. 
     #>
     [cmdletbinding(
         DefaultParameterSetName='All'
