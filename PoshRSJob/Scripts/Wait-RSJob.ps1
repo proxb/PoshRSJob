@@ -28,8 +28,8 @@
             Displays a progress bar
         .NOTES
             Name: Wait-RSJob
-            Author: Ryan Bushe/
-			Notes: This function is a slightly modified version of Get-RSJob by Boe Prox.(~10 lines of code changed)
+            Author: Ryan Bushe/Boe Prox
+	    Notes: This function is a slightly modified version of Get-RSJob by Boe Prox.(~10 lines of code changed)
         .EXAMPLE
             Get-RSJob | Wait-RSJob
             Description
@@ -147,6 +147,7 @@
                         break
 					}
 				}
+				Start-Sleep -Milliseconds 100
 			}While($Waitjobs.Count -ne 0)
         }
         If (-NOT $TimedOut) {
