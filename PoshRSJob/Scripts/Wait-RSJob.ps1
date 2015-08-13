@@ -137,7 +137,7 @@ Function Wait-RSJob {
                 })
               
                 #reuse $JustFinishedJobs to determine $WaitJobs in case a job state has changed between then and now for consistency
-                #Update $WaitJobs so the next loop cana determine the differences between this loop and the next for the $JustFinishedJobs to output
+                #Update $WaitJobs so the next loop can determine the differences between this loop and the next for the $JustFinishedJobs to output
                 $Waitjobs = $Waitjobs | Where { $_.ID -notin $JustFinishedJobs.ID }
 
                 #Wait just a bit so the HasMoreData can update if needed
