@@ -129,13 +129,15 @@ Function Wait-RSJob {
             $WaitJobs = $FilteredJobs
             $TotalJobs = $FilteredJobs.Count
             Write-Verbose "$($FilteredJobs.Count)"
-			$Date = Get-Date
-			Do{
-                
-				$JustFinishedJobs = @($Waitjobs | Where {
-                    $_.State -match 'Completed|Failed|Stopped|Suspended|Disconnected'
+            $Date = Get-Date
+            Do{               
+            	$JustFinishedJobs = @($Waitjobs | Where {
+            	    #Since the jobs' state can change independent of this cmdlet we only check it once per loop for consistency
+            	    $_.State -match 'Completed|Failed|Stopped|Suspended|Disconnected'
                 })
               
+                #reuse $JustFinishedJobs to determine $WaitJobs in case a job state has changed between then and now for consistency
+                #Update $WaitJobs so the next loop cana determine the differences between this loop and the next for the $JustFinishedJobs to output
                 $Waitjobs = $Waitjobs | Where { $_.ID -notin $JustFinishedJobs.ID }
 
                 #Wait just a bit so the HasMoreData can update if needed
@@ -143,20 +145,20 @@ Function Wait-RSJob {
                 $JustFinishedJobs
 
                 $Completed += $JustFinishedJobs.Count
-				Write-Verbose "Wait: $($Waitjobs.Count)"
+		Write-Verbose "Wait: $($Waitjobs.Count)"
                 Write-Verbose "Completed: ($Completed)"
                 Write-Verbose "Total: ($Totaljobs)"
                 Write-Verbose "Status: $($Completed/$TotalJobs)"
                 If ($PSBoundParameters.ContainsKey('ShowProgress')) {
                     Write-Progress -Activity "RSJobs Tracker" -Status ("Remaining Jobs: {0}" -f $Waitjobs.Count) -PercentComplete (($Completed/$TotalJobs)*100)
                 }
-				if($Timeout){
-					if((New-Timespan $Date).TotalSeconds -ge $Timeout){
-						$TimedOut = $True
-                        break
-					}
-				}		
-			} 
+		if($Timeout){
+		    if((New-Timespan $Date).TotalSeconds -ge $Timeout){
+		        $TimedOut = $True
+		        break
+		    }
+		}		
+	    } 
             While($Waitjobs.Count -ne 0)
         }
     }
