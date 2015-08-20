@@ -207,7 +207,6 @@ Function GetUsingVariableValues {
     Param ([System.Management.Automation.Language.UsingExpressionAst[]]$UsingVar)
     $UsingVar = $UsingVar | Group SubExpression | ForEach {$_.Group | Select -First 1}    
     ForEach ($Var in $UsingVar) {
-        Write-Verbose "Using: $($Var)" -Verbose
         Try {
             $Value = Get-Variable -Name $Var.SubExpression.VariablePath.UserPath -ErrorAction Stop
             [pscustomobject]@{
