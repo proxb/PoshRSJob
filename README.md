@@ -9,6 +9,7 @@ Install-Module -Name PoshRSJob
 ```
 
 More information and examples here: http://learn-powershell.net/2015/04/19/latest-updates-to-poshrsjob/
+Older post with some legacy examples found here: http://learn-powershell.net/2015/03/31/introducing-poshrsjob-as-an-alternative-to-powershell-jobs/
 
         .EXAMPLE
             $Test = 'test'
