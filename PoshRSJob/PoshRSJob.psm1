@@ -205,8 +205,9 @@ Function GetUsingVariables {
 
 Function GetUsingVariableValues {
     Param ([System.Management.Automation.Language.UsingExpressionAst[]]$UsingVar)
-    $UsingVar = $UsingVar | Group SubExpression | ForEach {$_.Group | Select -First 1}
+    $UsingVar = $UsingVar | Group SubExpression | ForEach {$_.Group | Select -First 1}    
     ForEach ($Var in $UsingVar) {
+        Write-Verbose "Using: $($Var)" -Verbose
         Try {
             $Value = Get-Variable -Name $Var.SubExpression.VariablePath.UserPath -ErrorAction Stop
             [pscustomobject]@{
@@ -225,7 +226,7 @@ Function ConvertScript {
     Param (
         [scriptblock]$ScriptBlock
     )
-    $UsingVariables = GetUsingVariables -ScriptBlock $ScriptBlock
+    $UsingVariables = @(GetUsingVariables -ScriptBlock $ScriptBlock)
     $List = New-Object 'System.Collections.Generic.List`1[System.Management.Automation.Language.VariableExpressionAst]'
     $Params = New-Object System.Collections.ArrayList
     If ($Script:Add_) {
@@ -235,8 +236,8 @@ Function ConvertScript {
         ForEach ($Ast in $UsingVariables) {
             [void]$list.Add($Ast.SubExpression)
         }
-        $UsingVariableData = GetUsingVariableValues $UsingVariables
-        [void]$Params.AddRange(($UsingVariableData.NewName | Select -Unique))
+        $UsingVariableData = @(GetUsingVariableValues $UsingVariables)
+        [void]$Params.AddRange(@($UsingVariableData.NewName | Select -Unique))
     } 
     $NewParams = $Params -join ', '
     $Tuple=[Tuple]::Create($list,$NewParams)
