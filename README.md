@@ -8,7 +8,7 @@ Download and install PoshRSJob using PowerShell V5:
 Install-Module -Name PoshRSJob
 ```
 
-More information and examples here: http://learn-powershell.net/2015/03/31/introducing-poshrsjob-as-an-alternative-to-powershell-jobs/
+More information and examples here: http://learn-powershell.net/2015/04/19/latest-updates-to-poshrsjob/
 
         .EXAMPLE
             $Test = 'test'
