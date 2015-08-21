@@ -205,10 +205,10 @@ Function GetUsingVariables {
 
 Function GetUsingVariableValues {
     Param ([System.Management.Automation.Language.UsingExpressionAst[]]$UsingVar)
-    $UsingVar = $UsingVar | Group SubExpression | ForEach {$_.Group | Select -First 1}    
+    $UsingVar = $UsingVar | Group SubExpression | ForEach {$_.Group | Select -First 1}        
     ForEach ($Var in $UsingVar) {
         Try {
-            $Value = Get-Variable -Name $Var.SubExpression.VariablePath.UserPath -ErrorAction Stop
+            $Value = ($PSCmdlet.SessionState.PSVariable.Get('Something')).Value
             [pscustomobject]@{
                 Name = $Var.SubExpression.Extent.Text
                 Value = $Value.Value

@@ -180,6 +180,7 @@ Function Start-RSJob {
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
         } 
+        #Write-Verbose ($MyInvocation | Out-String)
         If ($PSBoundParameters.ContainsKey('Name')) {
             If ($Name -isnot [scriptblock]) {
                 $JobName = [scriptblock]::Create("Write-Output $Name")
@@ -200,9 +201,11 @@ Function Start-RSJob {
             [void]$InitialSessionState.ImportPSSnapIn($PSSnapinsToImport,[ref]$Null)
         }
         If ($PSBoundParameters['FunctionsToLoad']) {
+            Write-Verbose "Loading custom functions: $($FunctionsToLoad -join '; ')"
             ForEach ($Function in $FunctionsToLoad) {
                 Try {
                     $Definition = Get-Content Function:\$Function -ErrorAction Stop
+                    Write-Debug "Definition: $($Definition)"
                     $SessionStateFunction = New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry -ArgumentList $Function, $Definition
                     $InitialSessionState.Commands.Add($SessionStateFunction) 
                 } Catch {
@@ -251,13 +254,28 @@ Function Start-RSJob {
         } Else {
             $Script:Add_ = $False
         }
-        #Convert ScriptBlock for $Using:
+        #region Convert ScriptBlock for $Using:
         Switch ($PSVersionTable.PSVersion.Major) {
             2 {
                 Write-Debug "Using PSParser with PowerShell V2"
                 $UsingVariables = @(GetUsingVariablesV2 -ScriptBlock $ScriptBlock)
                 
                 If ($UsingVariables.count -gt 0) {
+                    $UsingVar | ForEach {
+                        $Name = $_.Content -replace 'Using:'
+                        If ($MyInvocation.CommandOrigin -eq 'Runspace') {
+                            $Value = (Get-Variable -Name $Name).Value
+                        } Else {
+                            $PSCmdlet.SessionState.PSVariable.Get($Name).Value
+                        }
+                        New-Object PoshRS.PowerShell.V2UsingVariable -Property @{
+                            Name = $Name
+                            NewName = '$__using_{0}' -f $Name
+                            Value = $Value
+                            NewVarName = ('__using_{0}') -f $Name
+                        }
+                    }
+
                     $UsingVariableValues = @(GetUsingVariableValuesV2 -UsingVar $UsingVariables)
                     Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
                 }
@@ -271,9 +289,28 @@ Function Start-RSJob {
                 Write-Debug "Using AST with PowerShell V3+"
                 $UsingVariables = @(GetUsingVariables $ScriptBlock | Group SubExpression | ForEach {
                     $_.Group | Select -First 1
-                })
+                })    
+                #region Get Variable Values            
                 If ($UsingVariables.count -gt 0) {
-                    $UsingVariableValues = @(GetUsingVariableValues -UsingVar $UsingVariables)
+                    $UsingVar = $UsingVariables | Group SubExpression | ForEach {$_.Group | Select -First 1}        
+                    $UsingVariableValues = @(ForEach ($Var in $UsingVar) {
+                        Try {
+                            If ($MyInvocation.CommandOrigin -eq 'Runspace') {
+                                $Value = Get-Variable -Name $Var.SubExpression.VariablePath.UserPath
+                            } Else {
+                                $Value = ($PSCmdlet.SessionState.PSVariable.Get($Var.SubExpression.VariablePath.UserPath))
+                            }
+                            [pscustomobject]@{
+                                Name = $Var.SubExpression.Extent.Text
+                                Value = $Value.Value
+                                NewName = ('$__using_{0}' -f $Var.SubExpression.VariablePath.UserPath)
+                                NewVarName = ('__using_{0}' -f $Var.SubExpression.VariablePath.UserPath)
+                            }
+                        } Catch {
+                            Throw "$($Var.SubExpression.Extent.Text) is not a valid Using: variable!"
+                        }
+                    })
+                    #endregion Get Variable Values
                     Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
                 }
                 If ($UsingVariables.count -gt 0 -OR $Script:Add_) {
@@ -283,6 +320,7 @@ Function Start-RSJob {
                 }
             }
         }
+        #endregion Convert ScriptBlock for $Using:
 
         Write-Debug "ScriptBlock: $($NewScriptBlock)"
         [System.Threading.Monitor]::Enter($RunspacePools.syncroot) 
