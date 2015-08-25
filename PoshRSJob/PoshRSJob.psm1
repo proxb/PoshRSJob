@@ -1,4 +1,6 @@
 $ScriptPath = Split-Path $MyInvocation.MyCommand.Path
+$PSModule = $ExecutionContext.SessionState.Module 
+$PSModuleRoot = $PSModule.ModuleBase
 #region Custom Object
 Write-Verbose "Creating custom RSJob object"
 Add-Type -TypeDefinition @"
@@ -67,7 +69,6 @@ $jobcleanup.Runspace.Open()
 $jobcleanup.Runspace.SessionStateProxy.SetVariable("jobCleanup",$jobCleanup)     
 $jobcleanup.Runspace.SessionStateProxy.SetVariable("jobs",$jobs) 
 $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
-    $DataQueue = New-Object System.Collections.Queue
     #Routine to handle completed runspaces
     Do {   
         [System.Threading.Monitor]::Enter($Jobs.syncroot) 
@@ -76,7 +77,7 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
             If ($job.Handle.isCompleted -AND (-NOT $Job.Completed)) {   
                 #$jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) completed")  
                 Try {           
-                    [void]$DataQueue.Enqueue($job.InnerJob.EndInvoke($job.Handle))
+                    $Data = $job.InnerJob.EndInvoke($job.Handle)
                 } Catch {
                     $CaughtErrors = $Error
                     #$jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Caught terminating Error in job: $_") 
@@ -102,11 +103,11 @@ $jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
                 #$jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Disposing job")
                 $job.InnerJob.dispose() 
                 $job.Completed = $True  
-                If (($DataQueue.Count -gt 0) -AND (-NOT [string]::IsNullOrEmpty($DataQueue.Peek()))) {
-                    $job.output = $DataQueue.Dequeue()
+                #Return type from Invoke() is a generic collection; need to verify the first index is not NULL
+                If (($Data.Count -gt 0) -AND (-NOT ($Null -eq $Data[0]))) {   
+                    $job.output = $Data
                     $job.HasMoreData = $True                            
-                }                          
-                [void]$DataQueue.Clear()            
+                }              
                 $Error.Clear()
             } 
         }        

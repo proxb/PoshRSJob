@@ -255,6 +255,8 @@ Function Start-RSJob {
             $Script:Add_ = $False
         }
         #region Convert ScriptBlock for $Using:
+        $PreviousErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = 'Stop'
         Switch ($PSVersionTable.PSVersion.Major) {
             2 {
                 Write-Debug "Using PSParser with PowerShell V2"
@@ -263,16 +265,23 @@ Function Start-RSJob {
                 If ($UsingVariables.count -gt 0) {
                     $UsingVar | ForEach {
                         $Name = $_.Content -replace 'Using:'
-                        If ($MyInvocation.CommandOrigin -eq 'Runspace') {
-                            $Value = (Get-Variable -Name $Name).Value
-                        } Else {
-                            $PSCmdlet.SessionState.PSVariable.Get($Name).Value
-                        }
-                        New-Object PoshRS.PowerShell.V2UsingVariable -Property @{
-                            Name = $Name
-                            NewName = '$__using_{0}' -f $Name
-                            Value = $Value
-                            NewVarName = ('__using_{0}') -f $Name
+                        Try {
+                            If ($MyInvocation.CommandOrigin -eq 'Runspace') {
+                                $Value = (Get-Variable -Name $Name).Value
+                            } Else {
+                                $PSCmdlet.SessionState.PSVariable.Get($Name).Value
+                                If ([string]::IsNullOrEmpty($Value)) {
+                                    Throw 'No value!'
+                                }
+                            }
+                            New-Object PoshRS.PowerShell.V2UsingVariable -Property @{
+                                Name = $Name
+                                NewName = '$__using_{0}' -f $Name
+                                Value = $Value
+                                NewVarName = ('__using_{0}') -f $Name
+                            }
+                        } Catch {
+                            Throw "Start-RSJob : The value of the using variable '$($Var.SubExpression.Extent.Text)' cannot be retrieved because it has not been set in the local session."                        
                         }
                     }
 
@@ -292,13 +301,17 @@ Function Start-RSJob {
                 })    
                 #region Get Variable Values            
                 If ($UsingVariables.count -gt 0) {
-                    $UsingVar = $UsingVariables | Group SubExpression | ForEach {$_.Group | Select -First 1}        
+                    $UsingVar = $UsingVariables | Group SubExpression | ForEach {$_.Group | Select -First 1}  
+                    Write-Debug "CommandOrigin: $($MyInvocation.CommandOrigin)"      
                     $UsingVariableValues = @(ForEach ($Var in $UsingVar) {
                         Try {
                             If ($MyInvocation.CommandOrigin -eq 'Runspace') {
                                 $Value = Get-Variable -Name $Var.SubExpression.VariablePath.UserPath
                             } Else {
                                 $Value = ($PSCmdlet.SessionState.PSVariable.Get($Var.SubExpression.VariablePath.UserPath))
+                                If ([string]::IsNullOrEmpty($Value)) {
+                                    Throw 'No value!'
+                                }
                             }
                             [pscustomobject]@{
                                 Name = $Var.SubExpression.Extent.Text
@@ -307,7 +320,7 @@ Function Start-RSJob {
                                 NewVarName = ('__using_{0}' -f $Var.SubExpression.VariablePath.UserPath)
                             }
                         } Catch {
-                            Throw "$($Var.SubExpression.Extent.Text) is not a valid Using: variable!"
+                            Throw "Start-RSJob : The value of the using variable '$($Var.SubExpression.Extent.Text)' cannot be retrieved because it has not been set in the local session."
                         }
                     })
                     #endregion Get Variable Values
@@ -320,6 +333,7 @@ Function Start-RSJob {
                 }
             }
         }
+        $ErrorActionPreference = $PreviousErrorAction
         #endregion Convert ScriptBlock for $Using:
 
         Write-Debug "ScriptBlock: $($NewScriptBlock)"
