@@ -1,6 +1,8 @@
 PoshRSJob (1.3.0.0)
 ===================
 
+[![Build status](https://ci.appveyor.com/api/projects/status/svrd4ho4otugki24?svg=true)](https://ci.appveyor.com/project/proxb/poshrsjob)
+
 Provides an alternative to PSjobs with greater performance and less overhead to run commands in the background, freeing up the console.
 
 Download and install PoshRSJob using PowerShell V5:
