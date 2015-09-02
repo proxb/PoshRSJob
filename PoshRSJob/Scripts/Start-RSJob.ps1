@@ -257,19 +257,22 @@ Function Start-RSJob {
         #region Convert ScriptBlock for $Using:
         $PreviousErrorAction = $ErrorActionPreference
         $ErrorActionPreference = 'Stop'
+        Write-Verbose "PowerShell Version: $($PSVersionTable.PSVersion.Major)"
         Switch ($PSVersionTable.PSVersion.Major) {
             2 {
-                Write-Debug "Using PSParser with PowerShell V2"
-                $UsingVariables = @(GetUsingVariablesV2 -ScriptBlock $ScriptBlock)
-                
+                Write-Verbose "Using PSParser with PowerShell V2"
+                $UsingVariables = @(GetUsingVariablesV2 -ScriptBlock $ScriptBlock)                
+                Write-Verbose "Using Count: $($UsingVariables.count)"
+                Write-Verbose "$($UsingVariables|Out-String)"
+                Write-Verbose "CommandOrigin: $($MyInvocation.CommandOrigin)"
                 If ($UsingVariables.count -gt 0) {
-                    $UsingVar | ForEach {
+                    $UsingVariableValues = @($UsingVariables | ForEach {
                         $Name = $_.Content -replace 'Using:'
                         Try {
                             If ($MyInvocation.CommandOrigin -eq 'Runspace') {
                                 $Value = (Get-Variable -Name $Name).Value
                             } Else {
-                                $PSCmdlet.SessionState.PSVariable.Get($Name).Value
+                                $Value = $PSCmdlet.SessionState.PSVariable.Get($Name).Value
                                 If ([string]::IsNullOrEmpty($Value)) {
                                     Throw 'No value!'
                                 }
@@ -283,13 +286,12 @@ Function Start-RSJob {
                         } Catch {
                             Throw "Start-RSJob : The value of the using variable '$($Var.SubExpression.Extent.Text)' cannot be retrieved because it has not been set in the local session."                        
                         }
-                    }
+                    })
 
-                    $UsingVariableValues = @(GetUsingVariableValuesV2 -UsingVar $UsingVariables)
                     Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
                 }
                 If ($UsingVariables.count -gt 0 -OR $Script:Add_) {
-                    $NewScriptBlock = ConvertScriptBlockV2 $ScriptBlock            
+                    $NewScriptBlock = ConvertScriptBlockV2 $ScriptBlock -UsingVariable $UsingVariables -UsingVariableValue $UsingVariableValues           
                 } Else {
                     $NewScriptBlock = $ScriptBlock
                 }                

@@ -284,23 +284,14 @@ Function GetUsingVariablesV2 {
     }
 }
 
-Function GetUsingVariableValuesV2 {
-    Param ([System.Management.Automation.PSToken[]]$UsingVar)
-    $UsingVar | ForEach {
-        $Name = $_.Content -replace 'Using:'
-        New-Object PoshRS.PowerShell.V2UsingVariable -Property @{
-            Name = $Name
-            NewName = '$__using_{0}' -f $Name
-            Value = (Get-Variable -Name $Name).Value
-            NewVarName = ('__using_{0}') -f $Name
-        }
-    }
-}
-
 Function ConvertScriptBlockV2 {
-    Param ([scriptblock]$ScriptBlock)
-    $UsingVariables = GetUsingVariablesV2 -ScriptBlock $ScriptBlock
-    $UsingVariable = GetUsingVariableValuesV2 -UsingVar $UsingVariables
+    Param (
+        [scriptblock]$ScriptBlock,
+        $UsingVariable,
+        $UsingVariableValue
+    )
+    $UsingVariables = $UsingVariable
+    $UsingVariable = $UsingVariableValue
     $errors = [System.Management.Automation.PSParseError[]] @()
     $Tokens = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)
     $StringBuilder = New-Object System.Text.StringBuilder
@@ -314,7 +305,7 @@ Function ConvertScriptBlockV2 {
         [void]$Params.Add('$_')
     }
     If ($UsingVariable) {        
-        [void]$Params.AddRange(($UsingVariable | Select -expand NewName))
+        [void]$Params.AddRange(@($UsingVariable | Select -expand NewName))
     } 
     $NewParams = $Params -join ', '  
     If (-Not $HasParam) {
