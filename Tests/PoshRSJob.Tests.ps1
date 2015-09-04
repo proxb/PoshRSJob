@@ -36,14 +36,28 @@ Describe "PoshRSJob PS$PSVersion" {
             $Commands -contains "spsj"    | Should be $True
             $Commands -contains "wsj"    | Should be $True
         }
+        It 'should initialize necessary variables' {
+            $PSCmdlet.SessionState.PSVariable.Get('runspacepools').Name | Should Be 'RunspacePools'
+            $PSCmdlet.SessionState.PSVariable.Get('RunspacePoolCleanup').Name | Should Be 'RunspacePoolCleanup'
+            $PSCmdlet.SessionState.PSVariable.Get('JobCleanup').Name | Should Be 'JobCleanup'
+            $PSCmdlet.SessionState.PSVariable.Get('JobID').Name | Should Be 'JobID'
+            $PSCmdlet.SessionState.PSVariable.Get('Jobs').Name | Should Be 'Jobs'
+        }
     }
 }
-
+ 
 Describe "Start-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
-        It 'should return initial job details' {
-            
+        It 'each job should increment Id by 1' {
+            $FirstJob = Start-RSJob {$Null}
+            $InitialID = $FirstJob.Id
+            $SecondJob = Start-RSJob {$Null}
+            $NextID = $SecondJob.Id
+            $NextID - $InitialID | Should Be 1
+ 
+        }
+        It 'should return initial job details' {           
             $Output1 = @( 1 | Start-RSJob @Verbose -ScriptBlock {
                 Param($Object)
                 $Object
@@ -54,8 +68,7 @@ Describe "Start-RSJob PS$PSVersion" {
             } )
             $Output1.Count | Should be 1
             $Output5.Count | Should be 5
-        }
-         
+        }        
         It 'should support $using syntax' {
             $Test = "5"
             $Output1 = @( 1 | Start-RSJob @Verbose -ScriptBlock {
@@ -68,27 +81,26 @@ Describe "Start-RSJob PS$PSVersion" {
                 $_
             } ) | Wait-RSJob | Receive-RSJob
             $Output1 | Should Be 1
-        }               
+        }             
     }
 }
-
+ 
 Describe "Get-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
         It 'should return all job details' {
             $Output = @( Get-RSJob @Verbose )
             $Props = $Output[0].PSObject.Properties | Select -ExpandProperty Name
-            
-            $Output.count | Should be 8
+           
+            $Output.count | Should be 10
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
             $Props -contains "HasMoreData" | Should be $True
-        }
-        
+        }       
         It 'should return job details based on ID' {
             $Output = @( Get-RSJob @Verbose -Id 1 )
             $Props = $Output[0].PSObject.Properties | Select -ExpandProperty Name
-            
+           
             $Output.count | Should be 1
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
@@ -97,22 +109,22 @@ Describe "Get-RSJob PS$PSVersion" {
         It 'should return job details based on Name' {
             $Output = @( Get-RSJob @Verbose -Name Job2 )
             $Props = $Output[0].PSObject.Properties | Select -ExpandProperty Name
-            
+           
             $Output.count | Should be 1
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
             $Props -contains "HasMoreData" | Should be $True
         }
     }
-} 
-
+}
+ 
 Describe "Remove-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
         It 'should remove jobs' {
             Get-RSJob @Verbose | Remove-RSJob @Verbose
             $Output = @( Get-RSJob @Verbose )
-            
+           
             $Output.count | Should be 0
         }
         It 'should only remove specified jobs by ID' {
@@ -137,9 +149,9 @@ Describe "Remove-RSJob PS$PSVersion" {
              #We only removed one
              $RemainingNames.count -eq ($AllNames.count - 1) | Should Be $True
              #We removed the right ID
-             $RemainingNames -notcontains $ThisJobName | Should Be $True            
+             $RemainingNames -notcontains $ThisJobName | Should Be $True           
         }
-        It 'should only remove specified jobs by InputObject' {             
+        It 'should only remove specified jobs by InputObject' {            
              $TestJobs = @( 1..5 | Start-RSJob @Verbose -ScriptBlock { "" })
              Start-Sleep -Seconds 2
              $ThisJob = $TestJobs[0]
@@ -148,34 +160,34 @@ Describe "Remove-RSJob PS$PSVersion" {
              #We only removed one
              $RemainingNames.count -eq ($TestJobs.count - 1) | Should Be $True
              #We removed the right ID
-             $RemainingNames -notcontains $ThisJob.Name | Should Be $True              
+             $RemainingNames -notcontains $ThisJob.Name | Should Be $True             
         }
     }
 }
-
+ 
 Describe "Receive-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
         It 'should retrieve job data' {
             $TestJob = 0 | Start-RSJob @Verbose -ScriptBlock {"Working on $_"}
             Start-Sleep -Seconds 1
-            
+           
             $Output = @( $TestJob | Receive-RSJob @Verbose )
             $Output.Count | Should be 1
             $Output[0] | Should be "Working on 0"
-            
+           
         }
         It 'should not remove the job' {
             $TestJob = 0 | Start-RSJob @Verbose -ScriptBlock {""}
             Start-Sleep -Seconds 1
             $TestJob | Receive-RSJob @Verbose | Out-Null
-            
+           
             $Output = @( $TestJob | Get-RSJob @Verbose )
             $Output.Count | Should be 1
         }
     }
 }
-
+ 
 Describe "Wait-RSJob PS$PSVersion" {
     AfterAll {
         Write-Verbose "Perform cleanup actions"
@@ -192,7 +204,7 @@ Describe "Wait-RSJob PS$PSVersion" {
             }
             $TestJob | Wait-RSJob # Omitted verbose to avoid clutter
             $EndDate = Get-Date
-            
+           
             ( $EndDate - $StartDate ).TotalSeconds -gt 5 | Should be $True
         }
     }
