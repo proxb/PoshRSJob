@@ -76,7 +76,10 @@ Function Receive-RSJob {
         }
     }
     Process {
-        If (-Not $Bound) {
+        If (-Not $Bound -and $Job) {
+            $_.Output
+        }
+        elseif (-Not $Bound) {
             [void]$List.Add($_)
         }
     }
@@ -102,10 +105,6 @@ Function Receive-RSJob {
         }
         If ($ScriptBlock) {
             $jobs | Where $ScriptBlock | Select -ExpandProperty Output
-        } Else {
-            ForEach ($Item in $list) {
-                $Item.Output
-            }
         }
     }
 }
