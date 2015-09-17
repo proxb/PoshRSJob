@@ -126,7 +126,7 @@ Function Get-RSJob {
                 [void]$WhereList.Add("`$_.InstanceId -match $Items")  
             }
             'Job' {
-                $Items = '"{0}"' -f (($list.id | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_.Id}) -join '|')
                 [void]$WhereList.Add("`$_.id -match $Items")
             }            
         }
