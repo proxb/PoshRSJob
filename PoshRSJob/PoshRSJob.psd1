@@ -1,7 +1,7 @@
 ﻿
 #
 # PoshRSJob
-# Version 1.3.0.0
+# Version 1.4.1.0
 #
 # Boe Prox (c) 2014
 # http://learn-powershell.net
@@ -14,7 +14,7 @@
 ModuleToProcess = 'PoshRSJob.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.0.0'
+ModuleVersion = '1.4.1.0'
 
 # ID used to uniquely identify this module
 GUID = '9b17fb0f-e939-4a5c-b194-3f2247452972'
@@ -29,7 +29,7 @@ CompanyName = 'NA'
 Copyright = '(c) 2014 Boe Prox. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Module designed to use PowerShell runspaces to create jobs that allow throttling and quicker execution'
+Description = 'Module designed to use PowerShell runspaces to create jobs that allow throttling and quicker execution of commands'
 
 # Minimum version of the Windows PowerShell engine required by this module
 #PowerShellVersion = ''
@@ -83,9 +83,10 @@ Description = 'Module designed to use PowerShell runspaces to create jobs that a
 #ModuleList = @()
 
 # List of all files packaged with this module
-FileList = 'PoshRSJob.psd1', 'PoshRSJob.psm1', 
-               'TypeData\PoshRSJob.Format.ps1xml', 
-               'TypeData\PoshRSJob.Types.ps1xml'
+FileList = 'PoshRSJob.psd1', 'PoshRSJob.psm1', 'about_PoshRSJob.txt', 'ConvertScript.ps1', 'ConvertScriptBlockV2.ps1', 
+    'FindFunction.ps1', 'GetParamVariable.ps1', 'GetUsingVariables.ps1', 'GetUsingVariablesV2.ps1', 'GetUsingVariableValues.ps1', 
+    'Increment.ps1', 'IsExistingParamBlock.ps1', 'RegisterScriptScopeFunction.ps1', 'Get-RSJob.ps1', 'Receive-RSJob.ps1', 'Remove-RSJob.ps1', 
+    'Start-RSJob.ps1', 'Stop-RSJob.ps1', 'Wait-RSJob.ps1', 'PoshRSJob.Format.ps1xml', 'PoshRSJob.Types.ps1xml'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''

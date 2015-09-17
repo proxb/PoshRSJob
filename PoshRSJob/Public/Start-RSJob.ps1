@@ -157,7 +157,7 @@ Function Start-RSJob {
         DefaultParameterSetName = 'ScriptBlock'
     )]
     Param (
-        [parameter(Position=0,ParameterSetName = 'ScriptBlock')]
+        [parameter(Mandatory=$True,Position=0,ParameterSetName = 'ScriptBlock')]
         [ScriptBlock]$ScriptBlock,
         [parameter(Position=0,ParameterSetName = 'ScriptPath')]
         [string]$FilePath,
@@ -204,6 +204,7 @@ Function Start-RSJob {
             Write-Verbose "Loading custom functions: $($FunctionsToLoad -join '; ')"
             ForEach ($Function in $FunctionsToLoad) {
                 Try {
+                    RegisterScriptScopeFunction -Name $Function
                     $Definition = Get-Content Function:\$Function -ErrorAction Stop
                     Write-Debug "Definition: $($Definition)"
                     $SessionStateFunction = New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry -ArgumentList $Function, $Definition
