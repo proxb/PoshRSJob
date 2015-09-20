@@ -50,7 +50,8 @@ Function Stop-RSJob {
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PoshRS.PowerShell.RSJob[]]$Job
+        [PoshRS.PowerShell.RSJob[]]$Job,
+        [switch] $Force
     )
     Begin {        
         If ($PSBoundParameters['Debug']) {
@@ -114,10 +115,14 @@ Function Stop-RSJob {
         [System.Threading.Monitor]::Enter($Jobs.syncroot) 
         $ToStop | ForEach {            
             Write-Verbose "Stopping $($_.InstanceId)"
-            If ($_.State -ne 'Completed') {
+            if ($_.State -ne 'Completed' -and $PSBoundParameters['Force']) {
+                Write-Verbose "Killing job $($_.InstanceId)"
+                [void] $_.InnerJob.Stop()
+            } elseif ($_.State -ne 'Completed') {
+                Write-Verbose "Waiting for job $($_.InstanceId) to finish"
                 [void]$_.InnerJob.EndInvoke($_.Handle)
             }
         }
-        [System.Threading.Monitor]::Exit($Jobs.syncroot) 
+        [System.Threading.Monitor]::Exit($Jobs.syncroot)
     }  
 }
