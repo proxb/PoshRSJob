@@ -1,4 +1,4 @@
-﻿Function Wait-RSJob {
+Function Wait-RSJob {
     <#
         .SYNOPSIS
             Waits until all RSJobs are in one of the following states: 
@@ -126,34 +126,38 @@
             Write-Verbose "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
             $FilteredJobs = @($list | Where $ScriptBlock)
+            $WaitJobs = $FilteredJobs
             $TotalJobs = $FilteredJobs.Count
             Write-Verbose "$($FilteredJobs.Count)"
 			$Date = Get-Date
-			Do{
-				$Waitjobs = @($FilteredJobs | Where {
-                    $_.State -notmatch 'Completed|Failed|Stopped|Suspended|Disconnected'
+			Do{               
+                #only ever check $WaitJobs State once per loop, and do all operations based on that snapshot to avoid bugs where the state of a job may have changed mid loop
+				$JustFinishedJobs = @($Waitjobs | Where {
+                    $_.State -match 'Completed|Failed|Stopped|Suspended|Disconnected'
                 })
-                $Completed = $TotalJobs - $Waitjobs.count
+              
+                $Waitjobs = $Waitjobs | Where { $_.ID -notin $JustFinishedJobs.ID }
+
+                #Wait just a bit so the HasMoreData can update if needed
+                Start-Sleep -Milliseconds 100
+                $JustFinishedJobs
+
+                $Completed += $JustFinishedJobs.Count
 				Write-Verbose "Wait: $($Waitjobs.Count)"
                 Write-Verbose "Completed: ($Completed)"
                 Write-Verbose "Total: ($Totaljobs)"
-                Write-Verbose "Status: $($Completed.count/$TotalJobs)"
+                Write-Verbose "Status: $($Completed/$TotalJobs)"
                 If ($PSBoundParameters.ContainsKey('ShowProgress')) {
-                    Write-Progress -Activity "RSJobs Tracker" -Status ("Remaining Jobs: {0}" -f $Waitjobs.count) -PercentComplete (($Completed/$TotalJobs)*100)
+                    Write-Progress -Activity "RSJobs Tracker" -Status ("Remaining Jobs: {0}" -f $Waitjobs.Count) -PercentComplete (($Completed/$TotalJobs)*100)
                 }
 				if($Timeout){
 					if((New-Timespan $Date).TotalSeconds -ge $Timeout){
 						$TimedOut = $True
                         break
 					}
-				}
-				Start-Sleep -Milliseconds 100
-			}While($Waitjobs.Count -ne 0)
-        }
-        If (-NOT $TimedOut) {
-            #Wait just a bit so the HasMoreData can update if needed
-            Start-Sleep -Milliseconds 100
-            $FilteredJobs
+				}		
+			} 
+            While($Waitjobs.Count -ne 0)
         }
     }
 }
