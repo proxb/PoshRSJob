@@ -1,4 +1,4 @@
-﻿#handle PS2
+#handle PS2
 if(-not $PSScriptRoot)
 {
     $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
@@ -11,9 +11,18 @@ if($env:APPVEYOR_REPO_BRANCH -and $env:APPVEYOR_REPO_BRANCH -notlike "master" -o
     $Verbose.add("Verbose",$False)
 }
 
+
 Import-Module $PSScriptRoot\..\PoshRSJob\PoshRSJob -Verbose -Force -ErrorAction SilentlyContinue
 
-Describe "PoshRSJob PS$PSVersion" {
+<#
+$PSVersion = $PSVersionTable.PSVersion.Major
+Switch ($PSVersion) {
+    4 {Import-Module $PSScriptRoot\..\PoshRSJob\PoshRSJob -Force -ErrorAction SilentlyContinue}
+    2 {Import-Module PoshRSJob -Force -ErrorAction SilentlyContinue}
+}
+#>
+
+Describe "PoshRSJob PS$($PSVersion)" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
         It 'should load all functions' {
@@ -84,6 +93,20 @@ Describe "Start-RSJob PS$PSVersion" {
         }             
     }
 }
+
+Describe "Stop-RSJob PS$PSVersion" {
+    Context 'Strict mode' {
+        Set-StrictMode -Version latest
+        It 'should stop a job' {
+            $Job = 1 | Start-RSJob -ScriptBlock {
+                While ($True) {$Null}
+            }
+            $Job | Stop-RSJob
+            Start-Sleep -Milliseconds 100
+            $Job.State | Should be 'Stopped'
+        }
+    }
+}
  
 Describe "Get-RSJob PS$PSVersion" {
     Context 'Strict mode' {
@@ -92,7 +115,7 @@ Describe "Get-RSJob PS$PSVersion" {
             $Output = @( Get-RSJob @Verbose )
             $Props = $Output[0].PSObject.Properties | Select -ExpandProperty Name
            
-            $Output.count | Should be 10
+            $Output.count | Should be 11
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
             $Props -contains "HasMoreData" | Should be $True
@@ -189,11 +212,6 @@ Describe "Receive-RSJob PS$PSVersion" {
 }
  
 Describe "Wait-RSJob PS$PSVersion" {
-    AfterAll {
-        Write-Verbose "Perform cleanup actions"
-        Get-RSJob | Remove-RSJob
-        Remove-Module -Name PoshRSJob
-    }
     Context 'Strict mode' {
         Set-StrictMode -Version latest
         It 'should wait for jobs' {
@@ -203,19 +221,22 @@ Describe "Wait-RSJob PS$PSVersion" {
                 Get-Date
             }
             $TestJob | Wait-RSJob # Omitted verbose to avoid clutter
-            $EndDate = Get-Date
-           
+            $EndDate = Get-Date           
             ( $EndDate - $StartDate ).TotalSeconds -gt 5 | Should be $True
         }
     }
 }
 
-<#
-Describe "Stop-RSJob PS$PSVersion" {
+Describe "Module OnRemove Actions PS$PSVersion" {
     Context 'Strict mode' {
-        Set-StrictMode -Version latest
-        It 'should stop a job' {
+        Get-RSJob | Remove-RSJob
+        Remove-Module -Name PoshRSJob -ErrorAction SilentlyContinue
+        It 'should remove all variables' {
+            {Get-Variable Jobs -ErrorAction Stop} | Should Throw
+            {Get-Variable JobCleanup -ErrorAction Stop} | Should Throw
+            {Get-Variable JobID -ErrorAction Stop} | Should Throw
+            {Get-Variable RunspacePoolCleanup -ErrorAction Stop} | Should Throw
+            {Get-Variable RunspacePools -ErrorAction Stop} | Should Throw
         }
     }
 }
-#>
