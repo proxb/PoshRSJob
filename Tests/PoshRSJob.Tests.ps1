@@ -80,9 +80,9 @@ Describe "Start-RSJob PS$PSVersion" {
         }        
         It 'should support $using syntax' {
             $Test = "5"
-            $Output1 = @( 1 | Start-RSJob @Verbose -ScriptBlock {
+            $Output1 = 1 | Start-RSJob @Verbose -ScriptBlock {
                 $Using:Test
-            } ) | Wait-RSJob | Receive-RSJob
+            } | Wait-RSJob | Receive-RSJob
             $Output1 | Should Be 5
         }
         It 'should support pipeline $_ syntax' {
