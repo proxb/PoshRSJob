@@ -136,7 +136,7 @@ Function Wait-RSJob {
                     $_.State -match 'Completed|Failed|Stopped|Suspended|Disconnected'
                 })
               
-                $Waitjobs = $Waitjobs | Where { $_.ID -notin $JustFinishedJobs.ID }
+                $Waitjobs = $Waitjobs | Where { $JustFinishedJobs | Select-Object -Expand ID -notcontains $_.ID }
 
                 #Wait just a bit so the HasMoreData can update if needed
                 Start-Sleep -Milliseconds 100
