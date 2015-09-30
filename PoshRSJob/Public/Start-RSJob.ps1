@@ -358,7 +358,6 @@ Function Start-RSJob {
                         [void]$PowerShell.AddParameter($UsingVariableValues[$i].NewVarName,$UsingVariableValues[$i].Value)
                     }
                 }
-                $Global:test = $PSBoundParameters
                 If ($PSBoundParameters.ContainsKey('ArgumentList')) {
                     If ($ArgumentList.count -eq 0) {
                         [void]$PowerShell.AddArgument($ArgumentList) 
