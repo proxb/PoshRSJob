@@ -166,7 +166,7 @@ Function Start-RSJob {
         [parameter()]
         [object]$Name,
         [parameter()]
-        [object]$ArgumentList,
+        $ArgumentList,
         [parameter()]
         [int]$Throttle = 5,
         [parameter()]
@@ -358,10 +358,15 @@ Function Start-RSJob {
                         [void]$PowerShell.AddParameter($UsingVariableValues[$i].NewVarName,$UsingVariableValues[$i].Value)
                     }
                 }
+                $Global:test = $PSBoundParameters
                 If ($PSBoundParameters.ContainsKey('ArgumentList')) {
-                    ForEach ($Argument in $ArgumentList) {
-                        Write-Verbose "Adding Argument: $($Argument)"
-                        [void]$PowerShell.AddArgument($Argument)    
+                    If ($ArgumentList.count -eq 0) {
+                        [void]$PowerShell.AddArgument($ArgumentList) 
+                    } Else {
+                        ForEach ($Argument in $ArgumentList) {
+                            Write-Verbose "Adding Argument: $($Argument)"
+                            [void]$PowerShell.AddArgument($Argument)    
+                        }
                     }
                 }
                 $Handle = $PowerShell.BeginInvoke()
@@ -401,9 +406,13 @@ Function Start-RSJob {
                 }
             }
             If ($PSBoundParameters.ContainsKey('ArgumentList')) {
-                ForEach ($Argument in $ArgumentList) {
-                    Write-Verbose "Adding Argument: $($Argument)"
-                    [void]$PowerShell.AddArgument($Argument)    
+                If ($ArgumentList.count -eq 0) {
+                    [void]$PowerShell.AddArgument($ArgumentList) 
+                } Else {
+                    ForEach ($Argument in $ArgumentList) {
+                        Write-Verbose "Adding Argument: $($Argument)"
+                        [void]$PowerShell.AddArgument($Argument)    
+                    }
                 }
             }
             $Handle = $PowerShell.BeginInvoke()
