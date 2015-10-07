@@ -29,6 +29,7 @@ Add-Type -TypeDefinition @"
             public object Output;
             public System.Guid RunspacePoolID;
             public bool Completed = false;
+            public string Batch;
         }
         public class RSRunspacePool
         {

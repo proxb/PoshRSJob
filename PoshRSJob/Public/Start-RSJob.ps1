@@ -24,6 +24,9 @@ Function Start-RSJob {
         .PARAMETER Name
             The name of a background runspace job
 
+        .PARAMETER Batch
+            Name of the batch of RSJobs that will be run
+
         .PARAMETER ArgumentList
             List of values that will be applied at the end of the argument list in the Param() statement.
 
@@ -166,6 +169,8 @@ Function Start-RSJob {
         [parameter()]
         [object]$Name,
         [parameter()]
+        [string]$Batch,
+        [parameter()]
         $ArgumentList,
         [parameter()]
         [int]$Throttle = 5,
@@ -180,7 +185,13 @@ Function Start-RSJob {
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
         } 
-        #Write-Verbose ($MyInvocation | Out-String)
+        If ($PSBoundParameters.ContainsKey('Verbose')) {
+            Write-Verbose "Displaying PSBoundParameters"
+            $PSBoundParameters.GetEnumerator() | ForEach {
+                Write-Verbose $_
+            }
+        }
+
         If ($PSBoundParameters.ContainsKey('Name')) {
             If ($Name -isnot [scriptblock]) {
                 $JobName = [scriptblock]::Create("Write-Output $Name")
@@ -213,6 +224,13 @@ Function Start-RSJob {
                     Write-Warning "$($Function): $($_.Exception.Message)"
                 }
             }           
+        }
+        If ($PSBoundParameters.ContainsKey('ArgumentList')) {
+            If (@($ArgumentList).count -match '0|1') {
+                $SingleArgument = $True
+            } Else {
+                $SingleArgument = $False
+            }
         }
         $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
         $RunspacePool.ApartmentState = 'STA'
@@ -249,7 +267,7 @@ Function Start-RSJob {
         If ($PSBoundParameters.ContainsKey('InputObject')) {
             $SBParamCount++
         }
-        If ($ArgumentList.Count -ne $SBParamCount) {
+        If ($ArgumentList.Count -ne $SBParamCount -AND $IsPipeline) {
             Write-Verbose 'Will use $_ in Param() Block'
             $Script:Add_ = $True
         } Else {
@@ -359,11 +377,14 @@ Function Start-RSJob {
                     }
                 }
                 If ($PSBoundParameters.ContainsKey('ArgumentList')) {
-                    If ($ArgumentList.count -eq 0) {
-                        [void]$PowerShell.AddArgument($ArgumentList) 
+                    If ($SingleArgument) {                        
+                        ,$ArgumentList | ForEach {
+                            Write-Verbose "Adding Argument: $($_) <$($_.GetType().Fullname)>"
+                            [void]$PowerShell.AddArgument($_) 
+                        }
                     } Else {
                         ForEach ($Argument in $ArgumentList) {
-                            Write-Verbose "Adding Argument: $($Argument)"
+                            Write-Verbose "Adding Argument: $($Argument) <$($Argument.GetType().Fullname)>"
                             [void]$PowerShell.AddArgument($Argument)    
                         }
                     }
@@ -384,6 +405,7 @@ Function Start-RSJob {
                     Finished = $handle.IsCompleted
                     Command  = $ScriptBlock.ToString()
                     RunspacePoolID = $RunSpacePoolID
+                    Batch = $Batch
                     State = [System.Management.Automation.PSInvocationState]::Running
                 }
                 
@@ -405,11 +427,14 @@ Function Start-RSJob {
                 }
             }
             If ($PSBoundParameters.ContainsKey('ArgumentList')) {
-                If ($ArgumentList.count -eq 0) {
-                    [void]$PowerShell.AddArgument($ArgumentList) 
+                If ($SingleArgument) {
+                    ,$ArgumentList | ForEach {
+                        Write-Verbose "Adding Argument: $($_) <$($_.GetType().Fullname)>"
+                        [void]$PowerShell.AddArgument($_) 
+                    }
                 } Else {
                     ForEach ($Argument in $ArgumentList) {
-                        Write-Verbose "Adding Argument: $($Argument)"
+                        Write-Verbose "Adding Argument: $($Argument) <$($Argument.GetType().Fullname)>"
                         [void]$PowerShell.AddArgument($Argument)    
                     }
                 }
@@ -430,6 +455,8 @@ Function Start-RSJob {
                 Finished = $handle.RSWaitHandle
                 Command  = $ScriptBlock.ToString()
                 RunspacePoolID = $RunSpacePoolID
+                Batch = $Batch
+                State = [System.Management.Automation.PSInvocationState]::Running
             }
             
             $RSPObject.LastActivity = Get-Date

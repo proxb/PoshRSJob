@@ -16,7 +16,10 @@ Function Stop-RSJob {
             The GUID of the jobs to stop.
             
         .PARAMETER Job
-            The job object to stop.         
+            The job object to stop.  
+            
+        .PARAMETER Batch 
+            Name of the set of jobs                   
 
         .NOTES
             Name: Stop-RSJob
@@ -49,6 +52,9 @@ Function Stop-RSJob {
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
+        [parameter(ValueFromPipelineByPropertyName=$True,
+        ParameterSetName='Batch')]
+        [string[]]$Batch,
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
         [PoshRS.PowerShell.RSJob[]]$Job
     )
@@ -77,6 +83,10 @@ Function Stop-RSJob {
             [void]$list.AddRange($Job)
             $Bound = $True
         }
+        If ($PSBoundParameters['Batch']) {
+            [void]$list.AddRange($Batch)
+            $Bound = $True
+        }
         Write-Debug "Process"
     }
     Process {
@@ -103,6 +113,11 @@ Function Stop-RSJob {
                 [void]$StringBuilder.Append("`$_.InstanceId -match $Items")   
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())   
             }
+            'Batch' {
+                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                [void]$StringBuilder.Append("`$_.batch -match $Items")   
+                $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString()) 
+            } 	
             Default {$ScriptBlock=$Null}
         }
         If ($ScriptBlock) {

@@ -2,14 +2,19 @@ Function Wait-RSJob {
     <#
         .SYNOPSIS
             Waits until all RSJobs are in one of the following states: 
+
         .DESCRIPTION
             Waits until all RSJobs are in one of the following states:
+
         .PARAMETER Name
             The name of the jobs to query for.
+
         .PARAMETER ID
             The ID of the jobs that you want to wait for.
+
         .PARAMETER InstanceID
             The GUID of the jobs that you want to wait for.
+
         .PARAMETER State
             The State of the job that you want to wait for. Accepted values are:
             NotStarted
@@ -19,17 +24,25 @@ Function Wait-RSJob {
             Stopping
             Stopped
             Disconnected
+
+        .PARAMETER Batch
+            Name tof the set of RSJobs
+
         .PARAMETER HasMoreData
             Waits for jobs that have data being outputted. You can specify -HasMoreData:$False to wait for jobs
             that have no data to output.
+
 		.PARAMETER Timeout
 			Timeout after specified number of seconds
+
         .PARAMETER ShowProgress
             Displays a progress bar
+
         .NOTES
             Name: Wait-RSJob
             Author: Ryan Bushe/Boe Prox
 	    Notes: This function is a slightly modified version of Get-RSJob by Boe Prox.(~10 lines of code changed)
+
         .EXAMPLE
             Get-RSJob | Wait-RSJob
             Description
@@ -51,12 +64,17 @@ Function Wait-RSJob {
         [parameter(ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
+        [parameter(ValueFromPipelineByPropertyName=$True,
+        ParameterSetName='Batch')]
+        [string[]]$Batch,
+        [parameter(ParameterSetName='Batch')]
         [parameter(ParameterSetName='Name')]
         [parameter(ParameterSetName='Id')]
         [parameter(ParameterSetName='Guid')]
         [parameter(ParameterSetName='All')]
         [ValidateSet('NotStarted','Running','Completed','Failed','Stopping','Stopped','Disconnected')]
         [string[]]$State,
+        [parameter(ParameterSetName='Batch')]
         [parameter(ParameterSetName='Name')]
         [parameter(ParameterSetName='Id')]
         [parameter(ParameterSetName='Guid')]
@@ -76,6 +94,9 @@ Function Wait-RSJob {
         #Take care of bound parameters
         If ($PSBoundParameters['Name']) {
             [void]$list.AddRange($Name)
+        }
+        If ($PSBoundParameters['Batch']) {
+            [void]$list.AddRange($Batch)
         }
         If ($PSBoundParameters['Id']) {
             [void]$list.AddRange($Id)
@@ -108,9 +129,13 @@ Function Wait-RSJob {
                 [void]$WhereList.Add("`$_.InstanceId -match $Items")  
             }
             'Job' {
-                $Items = '"{0}"' -f (($list | Select -Expand id | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | Select -Expand Id | ForEach {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.id -match $Items")
-            }			
+            }	
+            'Batch' {
+                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                [void]$WhereList.Add("`$_.batch -match $Items")
+            }            		
         }
         If ($PSBoundParameters['State']) {
             [void]$WhereList.Add("`$_.State -match `"$($State -join '|')`"")

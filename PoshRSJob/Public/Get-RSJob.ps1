@@ -27,6 +27,9 @@ Function Get-RSJob {
             Stopped
             Disconnected
 
+        .PARAMETER Batch 
+            Name of the set of jobs
+
         .PARAMETER HasMoreData
             Displays jobs that have data being outputted. You can specify -HasMoreData:$False to display jobs
             that have no data to output.            
@@ -69,12 +72,17 @@ Function Get-RSJob {
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
+        [parameter(ParameterSetName='Batch')]
         [parameter(ParameterSetName='Name')]
         [parameter(ParameterSetName='Id')]
         [parameter(ParameterSetName='Guid')]
         [parameter(ParameterSetName='All')]
         [ValidateSet('NotStarted','Running','Completed','Failed','Stopping','Stopped','Disconnected')]
         [string[]]$State,
+        [parameter(ValueFromPipelineByPropertyName=$True,
+        ParameterSetName='Batch')]
+        [string[]]$Batch,
+        [parameter(ParameterSetName='Batch')]
         [parameter(ParameterSetName='Name')]
         [parameter(ParameterSetName='Id')]
         [parameter(ParameterSetName='Guid')]
@@ -94,19 +102,27 @@ Function Get-RSJob {
         #Take care of bound parameters
         If ($PSBoundParameters['Name']) {
             [void]$list.AddRange($Name)
+            $Bound = $True
+        }
+        If ($PSBoundParameters['Batch']) {
+            [void]$list.AddRange($Batch)
+            $Bound = $True
         }
         If ($PSBoundParameters['Id']) {
             [void]$list.AddRange($Id)
+            $Bound = $True
         }
         If ($PSBoundParameters['InstanceId']) {
             [void]$list.AddRange($InstanceId)
+            $Bound = $True
         }
         If ($PSBoundParameters['Job']){
             [void]$list.AddRange($Job)
+            $Bound = $True
         }                
     }
     Process {
-        If ($PSCmdlet.ParameterSetName -ne 'All') {
+        If ($PSCmdlet.ParameterSetName -ne 'All' -AND -NOT $Bound) {
             Write-Verbose "Adding $($_)"
             [void]$List.Add($_)
         }
@@ -128,7 +144,11 @@ Function Get-RSJob {
             'Job' {
                 $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_.Id}) -join '|')
                 [void]$WhereList.Add("`$_.id -match $Items")
-            }            
+            }   
+            'Batch' {
+                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                [void]$WhereList.Add("`$_.batch -match $Items")
+            }                      
         }
         If ($PSBoundParameters['State']) {
             [void]$WhereList.Add("`$_.State -match `"$($State -join '|')`"")

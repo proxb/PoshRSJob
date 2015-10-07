@@ -1,0 +1,29 @@
+TOPIC
+    PoshRSJob
+
+SYNOPSIS
+    PoshRSJob is a PowerShell jobs based framework using runspaces and runspacepools
+
+DESCRIPTION
+    PoshRSJob uses runspaces and runspacepools to provide a PSJobs based framework without
+    the overhead of PSJobs. This allows for the throttling of RSJobs as they are being process. Variables 
+    can be shared between runspaces using a synchronized collection and the locking of collections is recommnended.
+
+    It is important that you do not use "ForEach" when handling data going into Start-RSJob as doing so
+    will create a new runspacepool for each item and impact its ability to throttle the RSJobs.
+
+    Support for all versions of PowerShell with the exception of V1 is supported in PoshRSJob.
+
+    All elements of PSJobs are supported to include $Using: and legacy parameters such as ArgumentList.
+
+EXAMPLES
+    A simple demonstration of how you send data via the pipeline to Start-RSJob to create RSJobs that
+    run a command using the pipelined data.
+
+SEE ALSO
+    about_rsjobs
+    Start-RSjob
+    Stop-RSJob
+    Get-RSJob
+    Remove-RSJob
+    Receive-RSJob
