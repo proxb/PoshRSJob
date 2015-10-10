@@ -16,36 +16,60 @@ Older post with some legacy examples found here: http://learn-powershell.net/201
 
 ####Examples
 =================
+```PowerShell
+$Test = 'test'
+$Something = 1..10
+1..5|start-rsjob -Name {$_} -ScriptBlock {
+        [pscustomobject]@{
+            Result=($_*2)
+            Test=$Using:Test
+            Something=$Using:Something
+        }
+}            
+```
+        Id  Name                 State           HasMoreData  HasErrors    Command
+        --  ----                 -----           -----------  ---------    -------
+        76  1                    Completed       True         False        ...
+        77  2                    Running         False        False        ...
+        78  3                    Running         False        False        ...
+        79  4                    Completed       False        False        ...
+        80  5                    Completed       False        False        ...
 
-        .EXAMPLE
-            $Test = 'test'
-            $Something = 1..10
-            1..5|start-rsjob -Name {$_} -ScriptBlock {
-                [pscustomobject]@{
-                    Result=($_*2)
-                    Test=$Using:Test
-                    Something=$Using:Something
-                }
-            }            
+```PowerShell
+Get-RSjob | Receive-RSJob
+```
 
-            Id  Name                 State           HasMoreData  HasErrors    Command
-            --  ----                 -----           -----------  ---------    -------
-            76  1                    Completed       True         False        ...
-            77  2                    Running         False        False        ...
-            78  3                    Running         False        False        ...
-            79  4                    Completed       False        False        ...
-            80  5                    Completed       False        False        ...
-            
-            Get-RSjob | Receive-RSJob
+        Result Test Something
+        ------ ---- ---------
+         2 test {1, 2, 3, 4...}
+         4 test {1, 2, 3, 4...}
+         6 test {1, 2, 3, 4...}
+         8 test {1, 2, 3, 4...}
+        10 test {1, 2, 3, 4...}
+        
+        Description
+        -----------
+        Shows an example of the $Using: variable being used in the scriptblock.
 
-            Result Test Something
-            ------ ---- ---------
-                 2 test {1, 2, 3, 4...}
-                 4 test {1, 2, 3, 4...}
-                 6 test {1, 2, 3, 4...}
-                 8 test {1, 2, 3, 4...}
-                10 test {1, 2, 3, 4...}
-            
-            Description
-            -----------
-            Shows an example of the $Using: variable being used in the scriptblock.
+####This shows the streaming aspect wtih Wait-RSJob
+```PowerShell
+1..10|Start-RSJob {
+    if (1 -BAND $_){
+        "First ($_)"
+    }Else{
+        Start-sleep -seconds 2
+        "Last ($_)"
+    }
+}|Wait-RSJob|Receive-RSJob|ForEach{"I am $($_)"}
+```
+
+        I am First (1)
+        I am First (3)
+        I am First (5)
+        I am First (7)
+        I am First (9)
+        I am Last (2)
+        I am Last (4)
+        I am Last (6)
+        I am Last (8)
+        I am Last (10)
