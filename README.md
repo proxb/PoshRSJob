@@ -26,10 +26,6 @@ $Something = 1..10
             Something=$Using:Something
         }
 }            
-```
-![alt tag](https://github.com/proxb/PoshRSJob/blob/master/Images/RSjobExample1.gif)
-
-```PowerShell
 Get-RSjob | Receive-RSJob
 ```
 ![alt tag](https://github.com/proxb/PoshRSJob/blob/master/Images/GetRSJob-ReceiveRSJob.gif)
