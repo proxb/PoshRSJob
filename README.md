@@ -62,14 +62,4 @@ Get-RSjob | Receive-RSJob
     }
 }|Wait-RSJob|Receive-RSJob|ForEach{"I am $($_)"}
 ```
-
-        I am First (1)
-        I am First (3)
-        I am First (5)
-        I am First (7)
-        I am First (9)
-        I am Last (2)
-        I am Last (4)
-        I am Last (6)
-        I am Last (8)
-        I am Last (10)
+![alt tag](https://github.com/proxb/PoshRSJob/blob/master/Images/RSJobStreamingExample.gif)
