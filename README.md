@@ -51,7 +51,7 @@ Get-RSjob | Receive-RSJob
         -----------
         Shows an example of the $Using: variable being used in the scriptblock.
 
-####This shows the streaming aspect wtih Wait-RSJob
+####This shows the streaming aspect with Wait-RSJob
 ```PowerShell
 1..10|Start-RSJob {
     if (1 -BAND $_){
