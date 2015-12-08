@@ -87,7 +87,7 @@ Function Receive-RSJob {
     }
     Process {
         If (-Not $Bound -and $Job) {
-            $_.Output
+            WriteStream -IndividualJob $_.Output
         }
         elseif (-Not $Bound) {
             [void]$List.Add($_)
@@ -119,7 +119,9 @@ Function Receive-RSJob {
             Default {$ScriptBlock=$Null}
         }
         If ($ScriptBlock) {
-            $jobs | Where $ScriptBlock | Select -ExpandProperty Output
+            $jobs | Where $ScriptBlock | WriteStream
         }
     }
 }
+
+
