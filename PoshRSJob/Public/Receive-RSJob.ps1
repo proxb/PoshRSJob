@@ -57,27 +57,6 @@ Function Receive-RSJob {
         [PoshRS.PowerShell.RSJob[]]$Job
     )
     Begin {
-        Function Write-Stream {
-            Param (
-                [PoshRS.PowerShell.RSJob]$IndividualJob
-            )
-
-            #First write the verbose stream...
-            ForEach ($Item in $IndividualJob.Verbose)
-            {
-                Write-Verbose $Item
-            }
-
-            #Write the error stream...
-            ForEach ($Item in $IndividualJob.Error)
-            {
-                Write-Error $Item
-            }
-
-            #Write StdOut
-            Write-Output $IndividualJob.Output
-        }
-
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
         }        
@@ -108,7 +87,7 @@ Function Receive-RSJob {
     }
     Process {
         If (-Not $Bound -and $Job) {
-            Write-Stream -IndividualJob $_.Output
+            WriteStream -IndividualJob $_.Output
         }
         elseif (-Not $Bound) {
             [void]$List.Add($_)
@@ -140,10 +119,7 @@ Function Receive-RSJob {
             Default {$ScriptBlock=$Null}
         }
         If ($ScriptBlock) {
-            ForEach ($IJ in ($jobs | Where $ScriptBlock))
-            {
-                Write-Stream -IndividualJob $IJ
-            }
+            $jobs | Where $ScriptBlock | WriteStream
         }
     }
 }
