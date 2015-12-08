@@ -4,18 +4,23 @@
         [Parameter(ValueFromPipeline=$true)]
         [Object]$IndividualJob
     )
+    Begin {
+        $Streams = "Verbose","Warning","Error","Output"
+    }
 
     Process {
-        #First write the verbose stream...
-        Write-Verbose $IndividualJob.Verbose
+        ForEach ($Stream in $Streams)
+        {
+            If ($IndividualJob.$Stream)
+            {
+                Switch ($Stream) {
+                    "Verbose" { $IndividualJob | Select -ExpandProperty Verbose | ForEach { Write-Verbose $_ } }
+                    "Warning" { $IndividualJob | Select -ExpandProperty Warning | ForEach { Write-Warning $_ } }
+                    "Error"   { $IndividualJob.Error.Exception | Select -ExpandProperty Message | ForEach { Write-Error $_ } }
+                    "Output"  { $IndividualJob | Select -ExpandProperty Output }
+                }
+            }
 
-        #Write the warning stream...
-        Write-Warning $IndividualJob.Warning
-
-        #Write the error stream...
-        Write-Error $IndividualJob.Error
-
-        #Write StdOut
-        Write-Output $IndividualJob.Output
+        }
     }
 }

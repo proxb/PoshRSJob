@@ -87,7 +87,7 @@ Function Receive-RSJob {
     }
     Process {
         If (-Not $Bound -and $Job) {
-            WriteStream -IndividualJob $_.Output
+            $_ | WriteStream
         }
         elseif (-Not $Bound) {
             [void]$List.Add($_)
