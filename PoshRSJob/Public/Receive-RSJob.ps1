@@ -118,7 +118,9 @@ Function Receive-RSJob {
             } 	
             Default {$ScriptBlock=$Null}
         }
+        Write-Debug "ScriptBlock: $($ScriptBlock)"
         If ($ScriptBlock) {
+            Write-Verbose "Running Scriptblock"
             $jobs | Where $ScriptBlock | WriteStream
         }
     }

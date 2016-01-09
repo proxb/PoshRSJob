@@ -11,7 +11,7 @@
     Process {
         ForEach ($Stream in $Streams)
         {
-            If ($IndividualJob.$Stream)
+            If (($IndividualJob.$Stream.Count -gt 0) -AND (-NOT ($Null -eq $IndividualJob.$Stream)))
             {
                 Switch ($Stream) {
                     "Verbose" { $IndividualJob | Select -ExpandProperty Verbose | ForEach { Write-Verbose $_ } }
