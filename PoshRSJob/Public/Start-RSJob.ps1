@@ -265,7 +265,11 @@ Function Start-RSJob {
     End {  
         $SBParamCount = @(GetParamVariable -ScriptBlock $ScriptBlock).Count
         If ($PSBoundParameters.ContainsKey('InputObject')) {
-            $SBParamCount++
+            If ($ArgumentList.Count -gt 0) {
+                $SBParamCount++
+            } Else {
+                $SBParamCount--
+            }
         }
         If ($ArgumentList.Count -ne $SBParamCount -AND $IsPipeline) {
             Write-Verbose 'Will use $_ in Param() Block'

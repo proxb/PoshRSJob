@@ -157,11 +157,16 @@ Function Wait-RSJob {
 			$Date = Get-Date
 			Do{               
                 #only ever check $WaitJobs State once per loop, and do all operations based on that snapshot to avoid bugs where the state of a job may have changed mid loop
-				$JustFinishedJobs = @($Waitjobs | Where {
-                    $_.State -match 'Completed|Failed|Stopped|Suspended|Disconnected'
-                })
-              
-                $Waitjobs = $Waitjobs | Where { ($JustFinishedJobs | Select-Object -Expand ID) -notcontains $_.ID }
+                $JustFinishedJobs = New-Object System.Collections.ArrayList
+                $RunningJobs = New-Object System.Collections.ArrayList
+                ForEach ($WaitJob in $WaitJobs) {
+                    If($WaitJob.State -match 'Completed|Failed|Stopped|Suspended|Disconnected') {
+                        [void]$JustFinishedJobs.Add($WaitJob)
+                    } Else {
+                        [void]$RunningJobs.Add($WaitJob)
+                    }
+                }
+                $WaitJobs = $RunningJobs
 
                 #Wait just a bit so the HasMoreData can update if needed
                 Start-Sleep -Milliseconds 100
