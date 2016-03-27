@@ -1,7 +1,7 @@
 ﻿
 #
 # PoshRSJob
-# Version 1.5.5.3
+# Version 1.5.5.4
 #
 # Boe Prox (c) 2014
 # http://learn-powershell.net
@@ -14,7 +14,7 @@
 ModuleToProcess = 'PoshRSJob.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.5.5.3'
+ModuleVersion = '1.5.5.4'
 
 # ID used to uniquely identify this module
 GUID = '9b17fb0f-e939-4a5c-b194-3f2247452972'
@@ -68,7 +68,8 @@ Description = 'Module designed to use PowerShell runspaces to create jobs that a
 #NestedModules = @()
 
 # Functions to export from this module
-#FunctionsToExport = '*'
+FunctionsToExport = 'Get-RSJob','Receive-RSJob','Remove-RSJob',
+    'Start-RSJob','Stop-RSJob','Wait-RSJob'
 
 # Cmdlets to export from this module
 #CmdletsToExport = '*'
@@ -77,7 +78,7 @@ Description = 'Module designed to use PowerShell runspaces to create jobs that a
 #VariablesToExport = '*'
 
 # Aliases to export from this module
-#AliasesToExport = '*'
+AliasesToExport = 'gsj','rmsj','rsj','spsj','ssj','wsj'
 
 # List of all modules packaged with this module
 #ModuleList = @()
