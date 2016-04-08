@@ -5,7 +5,11 @@
       <ScriptProperty>
         <Name>HasErrors</Name>
         <GetScriptBlock>
-          $this.innerjob.HadErrors
+         if ($psversiontable.psversion.major -ge 3){
+            $this.innerjob.HadErrors
+         }else{
+            ($this.innerjob.Streams.Error -ne $null)
+         }
         </GetScriptBlock>
       </ScriptProperty>
     </Members>

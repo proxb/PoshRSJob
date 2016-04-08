@@ -125,25 +125,25 @@ Function Remove-RSJob {
         }
         If ($ScriptBlock) {
             Write-Verbose "Using ScriptBlock"
-            $ToRemove = $jobs | Where $ScriptBlock
+            $ToRemove = $PoshRS_jobs | Where $ScriptBlock
         } Else {
             $ToRemove = $List
         }
-        [System.Threading.Monitor]::Enter($Jobs.syncroot) 
+        [System.Threading.Monitor]::Enter($PoshRS_Jobs.syncroot) 
         $ToRemove | ForEach {
             If ($PSCmdlet.ShouldProcess("Name: $($_.Name), associated with JobID $($_.Id)",'Remove')) {
                 If ($_.State -notmatch 'Completed|Failed|Stopped') {
                     If ($PSBoundParameters.ContainsKey('Force')) {
                         [void] $_.InnerJob.Stop()
-                        $Jobs.Remove($_)
+                        $PoshRS_Jobs.Remove($_)
                     } Else {
                         Write-Error "Unable to remove job $($_.InstanceID)"
                     }
                 } Else {
-                    [void]$jobs.Remove($_)
+                    [void]$PoshRS_Jobs.Remove($_)
                 }
             }
         }
-        [System.Threading.Monitor]::Exit($Jobs.syncroot) 
+        [System.Threading.Monitor]::Exit($PoshRS_Jobs.syncroot) 
     }
 }

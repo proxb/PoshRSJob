@@ -1,7 +1,7 @@
 ﻿
 #
 # PoshRSJob
-# Version 1.5.5.4
+# Version 1.5.6.0
 #
 # Boe Prox (c) 2014
 # http://learn-powershell.net
@@ -14,7 +14,7 @@
 ModuleToProcess = 'PoshRSJob.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.5.5.4'
+ModuleVersion = '1.5.6.0'
 
 # ID used to uniquely identify this module
 GUID = '9b17fb0f-e939-4a5c-b194-3f2247452972'
@@ -75,7 +75,7 @@ FunctionsToExport = 'Get-RSJob','Receive-RSJob','Remove-RSJob',
 #CmdletsToExport = '*'
 
 # Variables to export from this module
-#VariablesToExport = '*'
+VariablesToExport = 'PoshRS_Jobs','PoshRS_JobCleanup','PoshRS_JobID','PoshRS_RunspacePools','PoshRS_RunspacePoolCleanup'
 
 # Aliases to export from this module
 AliasesToExport = 'gsj','rmsj','rsj','spsj','ssj','wsj'

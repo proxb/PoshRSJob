@@ -1,4 +1,5 @@
 ﻿Function Increment {
-    Set-Variable -Name JobId -Value ($JobId + 1) -Force -Scope Global
-    Write-Output $JobId
+    Write-Verbose "Incrementing job ID"
+    Set-Variable -Name PoshRS_JobId -Value ($PoshRS_JobId + 1) -Force -Scope Script
+    Write-Output $PoshRS_JobId
 }

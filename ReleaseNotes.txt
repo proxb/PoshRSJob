@@ -1,0 +1,12 @@
+---------
+|1.5.6.0|
+---------
+* Fixed Issue #64 (HadErrors in PoshRS.PowerShell.RSJob throws errors in PowerShell V2)
+* Fixed Issue #66 (Parameters not working in PowerShell V2)
+
+---------
+|1.5.6.0|
+---------
+* Fixed Issue #67 (Converted Add-Type code for C# classes to be created via Reflection for Nano server support)
+* Fixed Issue #61 (Receive-RSJob not allowing -Job parameter input)
+* Fixed Issue #63 (Replaced Global variables with Script scope)

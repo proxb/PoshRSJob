@@ -7,6 +7,9 @@ Function Receive-RSJob {
             Gets the results of the Windows PowerShell runspace jobs in the current session. You can use
             Get-RSJob and pipe the results into this function to get the results as well.
 
+        .PARAMETER InputObject
+            Represents the PoshRS.PowerShell.RSJob object being sent to command.
+
         .PARAMETER Name
             The name of the jobs to receive available data from.
 
@@ -36,25 +39,32 @@ Function Receive-RSJob {
             Description
             -----------
             Receives data from RSJob with IDs 1,5,78.
+
+        .EXAMPLE
+            Receive-RSJob -InputObject (Get-RSJob)
+
+            Description
+            -----------
+            Receives data from all RSJobs.
     #>
     [cmdletbinding(
         DefaultParameterSetName='Job'
     )]
     Param (
-        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
+        [parameter(Position=0,ValueFromPipeline=$True,ParameterSetName='Job')]
+        [PoshRS.PowerShell.RSJob[]]$InputObject,
+        [parameter(Position=1,ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Name')]
         [string[]]$Name,
-        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
+        [parameter(Position=2,ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Id')]
         [int[]]$Id,
-        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
+        [parameter(Position=3,ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Guid')]
         [guid[]]$InstanceID,
-        [parameter(ValueFromPipelineByPropertyName=$True,
+        [parameter(Position=4,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Batch')]
-        [string[]]$Batch,
-        [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PoshRS.PowerShell.RSJob[]]$Job
+        [string[]]$Batch
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
@@ -62,6 +72,7 @@ Function Receive-RSJob {
         }        
         $List = New-Object System.Collections.ArrayList
         $StringBuilder = New-Object System.Text.StringBuilder
+        $Bound = $False
 
         #Take care of bound parameters
         If ($PSBoundParameters['Name']) {
@@ -76,17 +87,18 @@ Function Receive-RSJob {
             [void]$list.AddRange($InstanceId)
             $Bound = $True
         }
-        If ($PSBoundParameters['Job']) {
-            [void]$list.AddRange($Job)
+        If ($PSBoundParameters['InputObject']) {
+            [void]$list.AddRange($InputObject)
             $Bound = $True
         }
         If ($PSBoundParameters['Batch']) {
             [void]$list.AddRange($Batch)
             $Bound = $True
         }
+        Write-Verbose "Bound: $Bound"
     }
     Process {
-        If (-Not $Bound -and $Job) {
+        If (-NOT $Bound -and $InputObject) {
             $_ | WriteStream
         }
         elseif (-Not $Bound) {
@@ -94,7 +106,7 @@ Function Receive-RSJob {
         }
     }
     End {
-        Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
+        Write-Verbose "ParameterSet: $($PSCmdlet.parametersetname)"
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
                 $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
@@ -118,10 +130,12 @@ Function Receive-RSJob {
             } 	
             Default {$ScriptBlock=$Null}
         }
-        Write-Debug "ScriptBlock: $($ScriptBlock)"
+        Write-Verbose "ScriptBlock: $($ScriptBlock)"
         If ($ScriptBlock) {
             Write-Verbose "Running Scriptblock"
-            $jobs | Where $ScriptBlock | WriteStream
+            $PoshRS_jobs | Where $ScriptBlock | WriteStream
+        } ElseIf ($Bound) {
+            $PoshRS_jobs | WriteStream
         }
     }
 }

@@ -122,11 +122,11 @@ Function Stop-RSJob {
         }
         If ($ScriptBlock) {
             Write-Verbose "Using ScriptBlock"
-            $ToStop = $jobs | Where $ScriptBlock
+            $ToStop = $PoshRS_jobs | Where $ScriptBlock
         } Else {
             $ToStop = $List
         }
-        [System.Threading.Monitor]::Enter($Jobs.syncroot) 
+        [System.Threading.Monitor]::Enter($PoshRS_jobs.syncroot) 
         $ToStop | ForEach {            
             Write-Verbose "Stopping $($_.InstanceId)"
             if ($_.State -ne 'Completed') {
@@ -134,6 +134,6 @@ Function Stop-RSJob {
                 [void] $_.InnerJob.Stop()
             }
         }
-        [System.Threading.Monitor]::Exit($Jobs.syncroot)
+        [System.Threading.Monitor]::Exit($PoshRS_jobs.syncroot)
     }  
 }

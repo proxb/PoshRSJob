@@ -164,7 +164,10 @@ Function Get-RSJob {
         If ($WhereBlock) {
             Write-Debug "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
-            $Jobs | Where $WhereBlock 
-        } Else {$Jobs}
+            $PoshRS_Jobs | Where $WhereBlock 
+        } 
+        Else {
+            $PoshRS_Jobs
+        }
     }
 }
