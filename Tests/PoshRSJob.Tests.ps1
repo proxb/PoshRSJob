@@ -46,11 +46,11 @@ Describe "PoshRSJob PS$($PSVersion)" {
             $Commands -contains "wsj"    | Should be $True
         }
         It 'should initialize necessary variables' {
-            $PSCmdlet.SessionState.PSVariable.Get('runspacepools').Name | Should Be 'RunspacePools'
-            $PSCmdlet.SessionState.PSVariable.Get('RunspacePoolCleanup').Name | Should Be 'RunspacePoolCleanup'
-            $PSCmdlet.SessionState.PSVariable.Get('JobCleanup').Name | Should Be 'JobCleanup'
-            $PSCmdlet.SessionState.PSVariable.Get('JobID').Name | Should Be 'JobID'
-            $PSCmdlet.SessionState.PSVariable.Get('Jobs').Name | Should Be 'Jobs'
+            $PSCmdlet.SessionState.PSVariable.Get('PoshRS_runspacepools').Name | Should Be 'PoshRS_RunspacePools'
+            $PSCmdlet.SessionState.PSVariable.Get('PoshRS_RunspacePoolCleanup').Name | Should Be 'PoshRS_RunspacePoolCleanup'
+            $PSCmdlet.SessionState.PSVariable.Get('PoshRS_JobCleanup').Name | Should Be 'PoshRS_JobCleanup'
+            $PSCmdlet.SessionState.PSVariable.Get('PoshRS_JobID').Name | Should Be 'PoshRS_JobID'
+            $PSCmdlet.SessionState.PSVariable.Get('PoshRS_Jobs').Name | Should Be 'PoshRS_Jobs'
         }
     }
 }
