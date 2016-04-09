@@ -42,7 +42,8 @@
                 }
             }
             'String' {
-                [void]$StringBuilder.Append(("`"{0}`"" -f $Tokens[$i].Content))
+                $qchar = $ScriptBlock.ToString().Split("`n")[($Tokens[$i].StartLine-1)].Substring($Tokens[$i].StartColumn-1,1)
+                [void]$StringBuilder.Append(("{0}{1}{0}" -f $qchar,$Tokens[$i].Content))
             }
             'GroupStart' {
                 $Script:GroupStart++

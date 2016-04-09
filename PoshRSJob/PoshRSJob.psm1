@@ -323,12 +323,12 @@ Update-TypeData "$ScriptPath\TypeData\PoshRSJob.Types.ps1xml"
 #endregion Format and Type Data
 
 #region Aliases
-New-Alias -Name ssj -Value Start-RSJob
-New-Alias -Name gsj -Value Get-RSJob
-New-Alias -Name rsj -Value Receive-RSJob
-New-Alias -Name rmsj -Value Remove-RSJob
-New-Alias -Name spsj -Value Stop-RSJob
-New-Alias -Name wsj -Value Wait-RSJob
+New-Alias -Name ssj -Value Start-RSJob -Force
+New-Alias -Name gsj -Value Get-RSJob -Force
+New-Alias -Name rsj -Value Receive-RSJob -Force
+New-Alias -Name rmsj -Value Remove-RSJob -Force
+New-Alias -Name spsj -Value Stop-RSJob -Force
+New-Alias -Name wsj -Value Wait-RSJob -Force
 #endregion Aliases
 
 #region Handle Module Removal

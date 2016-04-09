@@ -33,7 +33,8 @@ Function Wait-RSJob {
             that have no data to output.
 
 		.PARAMETER Timeout
-			Timeout after specified number of seconds
+			Timeout after specified number of seconds. This is a global timeout meaning that it is not a per
+            job timeout.
 
         .PARAMETER ShowProgress
             Displays a progress bar
