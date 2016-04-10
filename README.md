@@ -42,3 +42,6 @@ Get-RSjob | Receive-RSJob
 }|Wait-RSJob|Receive-RSJob|ForEach{"I am $($_)"}
 ```
 ![alt tag](https://github.com/proxb/PoshRSJob/blob/master/Images/RSJobStreamingExample.gif)
+
+####Nano Support for PoshRSJob
+![alt tag](https://github.com/proxb/PoshRSJob/blob/master/Images/NanoPoshRSJob.png)
