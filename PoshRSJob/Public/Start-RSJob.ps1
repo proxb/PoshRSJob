@@ -233,7 +233,11 @@ Function Start-RSJob {
             }
         }
         $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
-        $RunspacePool.ApartmentState = 'STA'
+        Try {
+            #ApartmentState doesn't exist in Nano Server
+            $RunspacePool.ApartmentState = 'STA'
+        } 
+        Catch {}
         [void]$RunspacePool.SetMaxRunspaces($Throttle)
         If ($PSVersionTable.PSVersion.Major -gt 2) {
             $RunspacePool.CleanupInterval = [timespan]::FromMinutes(2)    
