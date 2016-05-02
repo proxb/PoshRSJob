@@ -1,4 +1,4 @@
-PoshRSJob 1.5.7.2
+PoshRSJob 1.5.7.3
 ===================
 
 [![Build status](https://ci.appveyor.com/api/projects/status/svrd4ho4otugki24?svg=true)](https://ci.appveyor.com/project/proxb/poshrsjob)

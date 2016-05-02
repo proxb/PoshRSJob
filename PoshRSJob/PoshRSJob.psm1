@@ -4,11 +4,11 @@ $PSModuleRoot = $PSModule.ModuleBase
 
 #region RSJob Collections
 Write-Verbose "Creating RS collections"
-New-Variable PoshRS_Jobs -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Script
-New-Variable PoshRS_jobCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Script
-New-Variable PoshRS_JobID -Value ([int64]0) -Option ReadOnly -Scope Script
-New-Variable PoshRS_RunspacePools -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Script
-New-Variable PoshRS_RunspacePoolCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Script
+New-Variable PoshRS_Jobs -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Global
+New-Variable PoshRS_jobCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Global
+New-Variable PoshRS_JobID -Value ([int64]0) -Option ReadOnly -Scope Global
+New-Variable PoshRS_RunspacePools -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Global
+New-Variable PoshRS_RunspacePoolCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Global
 #endregion RSJob Collections
 
 #region Cleanup Routine
