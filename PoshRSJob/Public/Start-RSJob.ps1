@@ -209,7 +209,9 @@ Function Start-RSJob {
             [void]$InitialSessionState.ImportPSModule($ModulesToImport)
         }
         If ($PSBoundParameters['PSSnapinsToImport']) {
-            [void]$InitialSessionState.ImportPSSnapIn($PSSnapinsToImport,[ref]$Null)
+            ForEach ($PSSnapin in $PSSnapinsToImport) {
+                [void]$InitialSessionState.ImportPSSnapIn($PSSnapin,[ref]$Null)
+            }
         }
         If ($PSBoundParameters['FunctionsToLoad']) {
             Write-Verbose "Loading custom functions: $($FunctionsToLoad -join '; ')"
