@@ -1,6 +1,7 @@
 ---------
-|1.5.7.3|
+|1.5.7.5|
 ---------
+* Fixed Issue #69 (Module produces error if imported more than once (PS v2 only))
 * Fixed Issue #64 (HadErrors in PoshRS.PowerShell.RSJob throws errors in PowerShell V2)
 * Fixed Issue #67 (Converted Add-Type code for C# classes to be created via Reflection for Nano server support) <- Created custom dll
 * Fixed Issue #61 (Receive-RSJob not allowing -Job parameter input)

@@ -4,11 +4,11 @@ $PSModuleRoot = $PSModule.ModuleBase
 
 #region RSJob Collections
 Write-Verbose "Creating RS collections"
-New-Variable PoshRS_Jobs -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Global
-New-Variable PoshRS_jobCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Global
-New-Variable PoshRS_JobID -Value ([int64]0) -Option ReadOnly -Scope Global
-New-Variable PoshRS_RunspacePools -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Global
-New-Variable PoshRS_RunspacePoolCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Global
+New-Variable PoshRS_Jobs -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Global -Force
+New-Variable PoshRS_jobCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Global -Force
+New-Variable PoshRS_JobID -Value ([int64]0) -Option ReadOnly -Scope Global -Force
+New-Variable PoshRS_RunspacePools -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Global -Force
+New-Variable PoshRS_RunspacePoolCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Global -Force
 #endregion RSJob Collections
 
 #region Cleanup Routine
@@ -154,8 +154,14 @@ Try {
 #endregion Load Private Functions
 
 #region Format and Type Data
-Update-FormatData "$ScriptPath\TypeData\PoshRSJob.Format.ps1xml"
-Update-TypeData "$ScriptPath\TypeData\PoshRSJob.Types.ps1xml"
+Try {
+    Update-FormatData "$ScriptPath\TypeData\PoshRSJob.Format.ps1xml" -ErrorAction Stop
+}
+Catch {}
+Try {
+    Update-TypeData "$ScriptPath\TypeData\PoshRSJob.Types.ps1xml" -ErrorAction Stop
+}
+Catch {}
 #endregion Format and Type Data
 
 #region Aliases
@@ -177,11 +183,11 @@ $ExecutionContext.SessionState.Module.OnRemove ={
     $PoshRS_jobCleanup.PowerShell.Dispose()    
     $PoshRS_RunspacePoolCleanup.PowerShell.EndInvoke($PoshRS_RunspacePoolCleanup.Handle)
     $PoshRS_RunspacePoolCleanup.PowerShell.Dispose()
-    Remove-Variable PoshRS_JobId -Scope Script -Force
-    Remove-Variable PoshRS_Jobs -Scope Script -Force
-    Remove-Variable PoshRS_jobCleanup -Scope Script -Force
-    Remove-Variable PoshRS_RunspacePoolCleanup -Scope Script -Force
-    Remove-Variable PoshRS_RunspacePools -Scope Script -Force
+    Remove-Variable PoshRS_JobId -Scope Global -Force
+    Remove-Variable PoshRS_Jobs -Scope Global -Force
+    Remove-Variable PoshRS_jobCleanup -Scope Global -Force
+    Remove-Variable PoshRS_RunspacePoolCleanup -Scope Global -Force
+    Remove-Variable PoshRS_RunspacePools -Scope Global -Force
 }
 #endregion Handle Module Removal
 
