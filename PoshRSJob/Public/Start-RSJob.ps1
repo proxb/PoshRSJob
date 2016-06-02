@@ -60,8 +60,6 @@ Function Start-RSJob {
             
             Id  Name                 State           HasMoreData  HasErrors    Command
             --  ----                 -----           -----------  ---------    -------
-            11  .shsh                Running         False        False        ...
-            12  .ssh                 Running         False        False        ...
             13  Contacts             Running         False        False        ...
             14  Desktop              Running         False        False        ...
             15  Documents            Running         False        False        ...
@@ -79,8 +77,6 @@ Function Start-RSJob {
 
             Name          SizeMB
             ----          ------
-            .shsh              0
-            .ssh               0
             Contacts           0
             Desktop         7.24
             Documents      83.99
