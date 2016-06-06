@@ -1,9 +1,7 @@
 PoshRSJob 1.5.7.6
 ===================
 
-[![Join the chat at https://gitter.im/proxb/PoshRSJob](https://badges.gitter.im/proxb/PoshRSJob.svg)](https://gitter.im/proxb/PoshRSJob?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-[![Build status](https://ci.appveyor.com/api/projects/status/svrd4ho4otugki24?svg=true)](https://ci.appveyor.com/project/proxb/poshrsjob)
+[![Build status](https://ci.appveyor.com/api/projects/status/svrd4ho4otugki24?svg=true)](https://ci.appveyor.com/project/proxb/poshrsjob) [![Join the chat at https://gitter.im/proxb/PoshRSJob](https://badges.gitter.im/proxb/PoshRSJob.svg)](https://gitter.im/proxb/PoshRSJob?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Provides an alternative to PSjobs with greater performance and less overhead to run commands in the background, freeing up the console.
 
