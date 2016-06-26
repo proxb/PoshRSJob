@@ -1,5 +1,5 @@
 ---------
-|1.5.7.5|
+|1.5.7.7|
 ---------
 * Fixed Issue #69 (Module produces error if imported more than once (PS v2 only))
 * Fixed Issue #64 (HadErrors in PoshRS.PowerShell.RSJob throws errors in PowerShell V2)
@@ -9,3 +9,4 @@
 * Fixed Issue #66 (Parameters don't work with PowerShell V2)
 * Fixed Issue #65 (Bug with v2 variable substitution - single-quoted strings get $var references replaced)
 * Fixed Issue #68 (ApartmentState Does Not Exist in Nano)
+* Fixed Issue #76 (Jobs don't have output when using ADSI WinNT provider (Receive-RSJob))

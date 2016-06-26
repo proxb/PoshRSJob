@@ -1,4 +1,4 @@
-PoshRSJob 1.5.7.6
+PoshRSJob 1.5.7.7
 ===================
 
 [![Build status](https://ci.appveyor.com/api/projects/status/svrd4ho4otugki24?svg=true)](https://ci.appveyor.com/project/proxb/poshrsjob) [![Join the chat at https://gitter.im/proxb/PoshRSJob](https://badges.gitter.im/proxb/PoshRSJob.svg)](https://gitter.im/proxb/PoshRSJob?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)

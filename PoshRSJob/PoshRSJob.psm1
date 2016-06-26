@@ -56,7 +56,7 @@ $PoshRS_jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
                 $job.InnerJob.dispose() 
                 $job.Completed = $True  
                 #Return type from Invoke() is a generic collection; need to verify the first index is not NULL
-                If (($Data.Count -gt 0) -AND (-NOT ($Null -eq $Data[0]))) {   
+                If (($Data.Count -gt 0) -AND (-NOT ($Data.Count -eq 1 -AND $Null -eq $Data[0]))) {   
                     $job.output = $Data
                     $job.HasMoreData = $True                            
                 }              
