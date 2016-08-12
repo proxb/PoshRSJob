@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Management.Automation;
@@ -27,7 +27,7 @@ namespace PoshRS.PowerShell
         public string Name;
         public int ID;
         public System.Management.Automation.PSInvocationState State;
-        public System.Guid InstanceID;
+        public string InstanceID;
         public object Handle;
         public object Runspace;
         public System.Management.Automation.PowerShell InnerJob;

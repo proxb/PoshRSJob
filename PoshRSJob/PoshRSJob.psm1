@@ -74,7 +74,7 @@ Write-Verbose "Creating routine to monitor Runspace Pools"
 $PoshRS_RunspacePoolCleanup.Flag=$True
 $PoshRS_RunspacePoolCleanup.Host=$Host
 #5 minute timeout for unused runspace pools
-$PoshRS_RunspacePoolCleanup.Timeout = [timespan]::FromMinutes(1).Ticks
+$PoshRS_RunspacePoolCleanup.Timeout = [timespan]::FromMinutes(5).Ticks
 $PoshRS_RunspacePoolCleanup.Runspace =[runspacefactory]::CreateRunspace()
  
 #Create Type Collection so the object will work properly 
