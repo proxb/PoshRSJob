@@ -1,4 +1,10 @@
 ---------
+|1.6.1.0|
+---------
+* Fixed Issue #75 (Feature Request: Add RunspaceID handling to Start-RSJob for better throttling support)
+* Fixed Issue #82 (Exception setting "RunspacePool" in 1.6.0.0 build)
+
+---------
 |1.5.7.7|
 ---------
 * Fixed Issue #69 (Module produces error if imported more than once (PS v2 only))
