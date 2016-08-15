@@ -84,10 +84,10 @@ AliasesToExport = 'gsj','rmsj','rsj','spsj','ssj','wsj'
 #ModuleList = @()
 
 # List of all files packaged with this module
-FileList = 'PoshRSJob.psd1', 'PoshRSJob.psm1', 'about_PoshRSJob.txt', 'ConvertScript.ps1', 'ConvertScriptBlockV2.ps1', 
-    'FindFunction.ps1', 'GetParamVariable.ps1', 'GetUsingVariables.ps1', 'GetUsingVariablesV2.ps1', 'GetUsingVariableValues.ps1', 
-    'Increment.ps1', 'IsExistingParamBlock.ps1', 'RegisterScriptScopeFunction.ps1', 'Get-RSJob.ps1', 'Receive-RSJob.ps1', 'Remove-RSJob.ps1', 
-    'Start-RSJob.ps1', 'Stop-RSJob.ps1', 'Wait-RSJob.ps1', 'PoshRSJob.Format.ps1xml', 'PoshRSJob.Types.ps1xml'
+FileList = 'PoshRSJob.psd1', 'PoshRSJob.psm1', 'en-US\about_PoshRSJob.help.txt', 'Private\ConvertScript.ps1', 'Private\ConvertScriptBlockV2.ps1', 
+'Private\FindFunction.ps1', 'Private\GetParamVariable.ps1', 'Private\GetUsingVariables.ps1', 'Private\GetUsingVariablesV2.ps1', 'Private\GetUsingVariableValues.ps1', 
+'Private\Increment.ps1', 'Private\IsExistingParamBlock.ps1', 'Private\RegisterScriptScopeFunction.ps1', 'Public\Get-RSJob.ps1', 'Public\Receive-RSJob.ps1', 
+'Public\Remove-RSJob.ps1', 'Public\Start-RSJob.ps1', 'Public\Stop-RSJob.ps1', 'Public\Wait-RSJob.ps1', 'TypeData\PoshRSJob.Format.ps1xml', 'TypeData\PoshRSJob.Types.ps1xml'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
