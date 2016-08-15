@@ -460,7 +460,7 @@ Function Start-RSJob {
                 $ID = Increment                    
                 Write-Verbose "Using $($Item) as pipeline variable"
                 $PowerShell = [powershell]::Create().AddScript($NewScriptBlock)
-                $PowerShell.RunspacePool = $RunspacePool
+                $PowerShell.RunspacePool = $RSPObject.RunspacePool
                 [void]$PowerShell.AddArgument($Item)
                 Write-Verbose "Checking for Using: variables"
                 If ($UsingVariableValues.count -gt 0) {
@@ -520,7 +520,7 @@ Function Start-RSJob {
             Write-Debug "No InputObject"
             $ID = Increment                    
             $PowerShell = [powershell]::Create().AddScript($NewScriptBlock)
-            $PowerShell.RunspacePool = $RunspacePool
+            $PowerShell.RunspacePool = $RSPObject.RunspacePool
             If ($UsingVariableValues) {
                 For ($i=0;$i -lt $UsingVariableValues.count;$i++) {
                     Write-Verbose "Adding Param: $($UsingVariableValues[$i].Name) Value: $($UsingVariableValues[$i].Value)"
