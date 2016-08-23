@@ -1,5 +1,5 @@
 ---------
-|1.6.2.0|
+|1.6.2.1|
 ---------
 * Add support for PowerShell Core on Linux/MacOS (this still needs more work but should load types within a runspace now!)
 

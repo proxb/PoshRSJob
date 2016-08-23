@@ -86,9 +86,11 @@ If ($PSVersionTable.PSEdition -eq 'Core') {
     $RunspaceConfig = $_RunspaceConfig.GetValue($PoshRS_RunspacePoolCleanup.Runspace,$Null)
  
     $ctor = $RunspaceConfig.Types[0].GetType().GetConstructor([string])
-    $TypeConfigEntry = $ctor.Invoke($_)
+    $Types | ForEach {
+        $TypeConfigEntry = $ctor.Invoke($_)
  
-    $RunspaceConfig.Types.Append($TypeConfigEntry)
+        $RunspaceConfig.Types.Append($TypeConfigEntry)
+    }
 }
 Else {  
     #All of the types that we need are public :)
