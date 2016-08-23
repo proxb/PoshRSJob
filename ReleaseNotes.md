@@ -1,4 +1,9 @@
 ---------
+|1.6.2.0|
+---------
+* Add support for PowerShell Core on Linux/MacOS (this still needs more work but should load types within a runspace now!)
+
+---------
 |1.6.1.0|
 ---------
 * Fixed Issue #75 (Feature Request: Add RunspaceID handling to Start-RSJob for better throttling support)
