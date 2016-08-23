@@ -14,6 +14,9 @@ More information and examples here: http://learn-powershell.net/2015/04/19/lates
 
 Older post with some legacy examples found here: http://learn-powershell.net/2015/03/31/introducing-poshrsjob-as-an-alternative-to-powershell-jobs/
 
+####Now working on Linux/MacOS with PowerShell Core!
+![alt tag](https://github.com/proxb/PoshRSJob/blob/master/Images/PoshRSJob.gif)
+
 ####Examples
 =================
 ```PowerShell
