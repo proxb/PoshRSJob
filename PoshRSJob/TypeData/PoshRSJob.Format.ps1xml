@@ -3,7 +3,7 @@
     <View>
       <Name>ComputerTarget</Name>
       <ViewSelectedBy>
-        <TypeName>PoshRS.PowerShell.RSJob</TypeName>
+        <TypeName>RSJob</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -67,7 +67,7 @@
     <View>
       <Name>Update</Name>
       <ViewSelectedBy>
-        <TypeName>PoshRS.PowerShell.RSJob</TypeName>
+        <TypeName>RSJob</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>

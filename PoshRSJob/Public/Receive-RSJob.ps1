@@ -8,7 +8,7 @@ Function Receive-RSJob {
             Get-RSJob and pipe the results into this function to get the results as well.
 
         .PARAMETER InputObject
-            Represents the PoshRS.PowerShell.RSJob object being sent to command.
+            Represents the RSJob object being sent to command.
 
         .PARAMETER Name
             The name of the jobs to receive available data from.
@@ -52,7 +52,7 @@ Function Receive-RSJob {
     )]
     Param (
         [parameter(Position=0,ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PoshRS.PowerShell.RSJob[]]$InputObject,
+        [RSJob[]]$InputObject,
         [parameter(Position=1,ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Name')]
         [string[]]$Name,

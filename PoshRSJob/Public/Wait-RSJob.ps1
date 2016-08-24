@@ -55,7 +55,7 @@ Function Wait-RSJob {
     )]
     Param (
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PoshRS.PowerShell.RSJob[]]$Job,
+        [RSJob[]]$Job,
         [parameter(ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Name')]
         [string[]]$Name,

@@ -58,7 +58,7 @@ Function Get-RSJob {
             -----------
             Displays list of jobs with IDs 1,5,78.
     #>
-    [OutputType('PoshRS.PowerShell.RSJob')]
+    [OutputType('RSJob')]
     [cmdletbinding(
         DefaultParameterSetName='All'
     )]
@@ -89,7 +89,7 @@ Function Get-RSJob {
         [parameter(ParameterSetName='All')]
         [Switch]$HasMoreData,
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PoshRS.PowerShell.RSJob[]]$Job        
+        [RSJob[]]$Job        
     )
     Begin {
         If ($PSBoundParameters['Debug']) {

@@ -151,7 +151,7 @@ Function Start-RSJob {
             Shows an example of the $Using: variable being used in the scriptblock as well as $_ and multiple -ArgumentList parameters.
 
     #>
-    [OutputType('PoshRS.PowerShell.RSJob')]
+    [OutputType('RSJob')]
     [cmdletbinding(
         DefaultParameterSetName = 'ScriptBlock'
     )]
@@ -315,7 +315,7 @@ Function Start-RSJob {
                                     Throw 'No value!'
                                 }
                             }
-                            New-Object PoshRS.PowerShell.V2UsingVariable -Property @{
+                            New-Object V2UsingVariable -Property @{
                                 Name = $Name
                                 NewName = '$__using_{0}' -f $Name
                                 Value = $Value
@@ -408,7 +408,7 @@ Function Start-RSJob {
                     $RunspacePool.CleanupInterval = [timespan]::FromMinutes(5)    
                 }
                 $RunspacePool.Open()
-                $RSPObject = New-Object PoshRS.PowerShell.RSRunspacePool -Property @{
+                $RSPObject = New-Object RSRunspacePool -Property @{
                     RunspacePool = $RunspacePool
                     MaxJobs = $RunspacePool.GetMaxRunspaces()
                     RunspacePoolID = $RunspacePoolID
@@ -442,7 +442,7 @@ Function Start-RSJob {
                     $RunspacePool.CleanupInterval = [timespan]::FromMinutes(2)    
                 }
                 $RunspacePool.Open()
-                $RSPObject = New-Object PoshRS.PowerShell.RSRunspacePool -Property @{
+                $RSPObject = New-Object RSRunspacePool -Property @{
                     RunspacePool = $RunspacePool
                     MaxJobs = $RunspacePool.GetMaxRunspaces()
                     RunspacePoolID = $RunspacePoolID
@@ -493,7 +493,7 @@ Function Start-RSJob {
                 Else {
                     $JobName.InvokeReturnAsIs()
                 }
-                $Object = New-Object PoshRS.PowerShell.RSJob -Property @{
+                $Object = New-Object RSJob -Property @{
                     Name = $_JobName
                     InstanceID = [guid]::NewGuid().ToString()
                     ID = $ID  
@@ -548,7 +548,7 @@ Function Start-RSJob {
             Else {
                 $JobName.InvokeReturnAsIs()
             }
-            $Object = New-Object PoshRS.PowerShell.RSJob -Property @{
+            $Object = New-Object RSJob -Property @{
                 Name = $_JobName
                 InstanceID = [guid]::NewGuid().ToString()
                 ID = $ID  

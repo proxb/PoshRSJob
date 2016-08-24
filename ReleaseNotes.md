@@ -1,4 +1,10 @@
 ---------
+|1.7.0.0|
+---------
+* Remove need for DLL file for building out the classes. Using pure PowerShell (mostly) via means of here-strings and Add-Type for PowerShell V2-4 and the new Classes keywords for PowerShell V5 which includes PowerShell Core/Nano.
+* Remove the prefixes for custom objects so they no longer start with PoshRS.PowerShell.. Now they are V2UsingVariable, RSJob and RSRunspacePool.
+
+---------
 |1.6.2.1|
 ---------
 * Add support for PowerShell Core on Linux/MacOS (this still needs more work but should load types within a runspace now!)

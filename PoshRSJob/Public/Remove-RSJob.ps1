@@ -60,7 +60,7 @@ Function Remove-RSJob {
         ParameterSetName='Batch')]
         [string[]]$Batch,
         [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [PoshRS.PowerShell.RSJob[]]$Job,
+        [RSJob[]]$Job,
         [parameter()]
         [switch]$Force
     )

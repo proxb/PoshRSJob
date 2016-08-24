@@ -2,6 +2,99 @@ $ScriptPath = Split-Path $MyInvocation.MyCommand.Path
 $PSModule = $ExecutionContext.SessionState.Module 
 $PSModuleRoot = $PSModule.ModuleBase
 
+If ($PSVersionTable.PSEdition -eq 'Core') {
+    class V2UsingVariable {
+        [string]$Name
+        [string]$NewName
+        [object]$Value
+        [string]$NewVarName
+    }
+ 
+    class RSRunspacePool{
+        [System.Management.Automation.Runspaces.RunspacePool]$RunspacePool
+        [System.Management.Automation.Runspaces.RunspacePoolState]$State
+        [int]$AvailableJobs
+        [int]$MaxJobs
+        [DateTime]$LastActivity = [DateTime]::MinValue
+        [String]$RunspacePoolID
+        [bool]$CanDispose = $False
+    }
+ 
+    class RSJob {
+        [string]$Name
+        [int]$ID
+        [System.Management.Automation.PSInvocationState]$State
+        [string]$InstanceID
+        [object]$Handle
+        [object]$Runspace
+        [System.Management.Automation.PowerShell]$InnerJob
+        [System.Threading.ManualResetEvent]$Finished
+        [string]$Command
+        [System.Management.Automation.PSDataCollection[System.Management.Automation.ErrorRecord]]$Error
+        [System.Management.Automation.PSDataCollection[System.Management.Automation.VerboseRecord]]$Verbose
+        [System.Management.Automation.PSDataCollection[System.Management.Automation.DebugRecord]]$Debug
+        [System.Management.Automation.PSDataCollection[System.Management.Automation.WarningRecord]]$Warning
+        [System.Management.Automation.PSDataCollection[System.Management.Automation.ProgressRecord]]$Progress
+        [bool]$HasMoreData
+        [bool]$HasErrors
+        [object]$Output
+        [string]$RunspacePoolID
+        [bool]$Completed = $False
+        [string]$Batch
+    }
+}
+Else {
+    Add-Type @"
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using System.Management.Automation;
+ 
+    public class V2UsingVariable
+    {
+        public string Name;
+        public string NewName;
+        public object Value;
+        public string NewVarName;
+    }
+ 
+    public class RSRunspacePool
+    {
+        public System.Management.Automation.Runspaces.RunspacePool RunspacePool;
+        public System.Management.Automation.Runspaces.RunspacePoolState State;
+        public int AvailableJobs;
+        public int MaxJobs;
+        public DateTime LastActivity = DateTime.MinValue;
+        public string RunspacePoolID;
+        public bool CanDispose = false;
+    }
+ 
+    public class RSJob
+    {
+        public string Name;
+        public int ID;
+        public System.Management.Automation.PSInvocationState State;
+        public string InstanceID;
+        public object Handle;
+        public object Runspace;
+        public System.Management.Automation.PowerShell InnerJob;
+        public System.Threading.ManualResetEvent Finished;
+        public string Command;
+        public System.Management.Automation.PSDataCollection<System.Management.Automation.ErrorRecord> Error;
+        public System.Management.Automation.PSDataCollection<System.Management.Automation.VerboseRecord> Verbose;
+        public System.Management.Automation.PSDataCollection<System.Management.Automation.DebugRecord> Debug;
+        public System.Management.Automation.PSDataCollection<System.Management.Automation.WarningRecord> Warning;
+        public System.Management.Automation.PSDataCollection<System.Management.Automation.ProgressRecord> Progress;
+        public bool HasMoreData;
+        public bool HasErrors;
+        public object Output;
+        public string RunspacePoolID;
+        public bool Completed = false;
+        public string Batch;
+    }
+"@
+}
+
 #region RSJob Collections
 Write-Verbose "Creating RS collections"
 New-Variable PoshRS_Jobs -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Global -Force
