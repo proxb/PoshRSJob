@@ -1,4 +1,9 @@
 ---------
+|1.7.1.0|
+---------
+* Replaced private apis with public apis (#85 Update RunspaceConfiguration apis to use InitialSessionState instead)
+
+---------
 |1.7.0.0|
 ---------
 * Remove need for DLL file for building out the classes. Using pure PowerShell (mostly) via means of here-strings and Add-Type for PowerShell V2-4 and the new Classes keywords for PowerShell V5 which includes PowerShell Core/Nano.

@@ -168,30 +168,15 @@ $PoshRS_RunspacePoolCleanup.Flag=$True
 $PoshRS_RunspacePoolCleanup.Host=$Host
 #5 minute timeout for unused runspace pools
 $PoshRS_RunspacePoolCleanup.Timeout = [timespan]::FromMinutes(5).Ticks
-$PoshRS_RunspacePoolCleanup.Runspace =[runspacefactory]::CreateRunspace()
+$InitialSessionState = [initialsessionstate]::CreateDefault()
  
 #Create Type Collection so the object will work properly
 $Types = Get-ChildItem "$($PSScriptRoot)\TypeData" -Filter *Types* | Select -ExpandProperty Fullname
-If ($PSVersionTable.PSEdition -eq 'Core') {
-    #Have to do some Reflection magic to deal with internal types on Linux PowerShell Core
-    $Flags = 'nonpublic','static','instance'
-    $_RunspaceConfig = $PoshRS_RunspacePoolCleanup.Runspace.GetType().GetProperty('RunspaceConfiguration',$Flags)
-    $RunspaceConfig = $_RunspaceConfig.GetValue($PoshRS_RunspacePoolCleanup.Runspace,$Null)
- 
-    $ctor = $RunspaceConfig.Types[0].GetType().GetConstructor([string])
-    $Types | ForEach {
-        $TypeConfigEntry = $ctor.Invoke($_)
- 
-        $RunspaceConfig.Types.Append($TypeConfigEntry)
-    }
+ForEach ($Type in $Types) {
+    $TypeConfigEntry = New-Object System.Management.Automation.Runspaces.SessionStateTypeEntry -ArgumentList $Type
+    $InitialSessionState.Types.Add($TypeConfigEntry)
 }
-Else {  
-    #All of the types that we need are public :)
-    $Types | ForEach {
-        $TypeEntry = New-Object System.Management.Automation.Runspaces.TypeConfigurationEntry -ArgumentList $_
-        $PoshRS_RunspacePoolCleanup.Runspace.RunspaceConfiguration.types.Append($TypeEntry)
-    }
-}
+$PoshRS_RunspacePoolCleanup.Runspace =[runspacefactory]::CreateRunspace($InitialSessionState)
   
 $PoshRS_RunspacePoolCleanup.Runspace.Open()         
 $PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_RunspacePoolCleanup",$PoshRS_RunspacePoolCleanup)     
