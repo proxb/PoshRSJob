@@ -17,7 +17,7 @@ $completion_Name = {
     }
 }
 #endregion Job Name
-If (-not $global:options) { 
+If (-not (Get-Variable -Scope Global -Name Options -ErrorAction:SilentlyContinue)) { 
     $global:options = @{
         CustomArgumentCompleters = @{}
         NativeArgumentCompleters = @{}
