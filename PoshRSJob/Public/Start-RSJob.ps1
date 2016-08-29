@@ -222,6 +222,12 @@ Function Start-RSJob {
                 Catch {
                     Write-Warning "$($Function): $($_.Exception.Message)"
                 }
+
+                #Check for an alias and add it as well
+                If ($Alias = Get-Alias -Definition $Function) {
+                    $AliasEntry = New-Object System.Management.Automation.Runspaces.SessionStateAliasEntry -ArgumentList $Alias.Name,$Alias.Definition
+                    $InitialSessionState.Commands.Add($AliasEntry)
+                }
             }           
         }
         If ($PSBoundParameters.ContainsKey('ArgumentList')) {

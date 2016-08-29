@@ -1,4 +1,10 @@
 ---------
+|1.7.2.0|
+---------
+* Fixed Issue #83 (FunctionsToImport should include the function's Alias where applicable)
+
+
+---------
 |1.7.1.0|
 ---------
 * Replaced private apis with public apis (#85 Update RunspaceConfiguration apis to use InitialSessionState instead)
