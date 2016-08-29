@@ -100,6 +100,7 @@ Function Receive-RSJob {
     Process {
         If (-NOT $Bound -and $InputObject) {
             $_ | WriteStream
+            if (@("Completed", "Failed", "Stopped") -contains $_.State) { $_.HasMoreData = $false }
         }
         elseif (-Not $Bound) {
             [void]$List.Add($_)
@@ -133,11 +134,16 @@ Function Receive-RSJob {
         Write-Verbose "ScriptBlock: $($ScriptBlock)"
         If ($ScriptBlock) {
             Write-Verbose "Running Scriptblock"
-            $PoshRS_jobs | Where $ScriptBlock | WriteStream
+            $PoshRS_jobs | Where $ScriptBlock | %{ 
+                $_ | WriteStream
+                if (@("Completed", "Failed", "Stopped") -contains $_.State) { $_.HasMoreData = $false }
+            }
         } ElseIf ($Bound) {
-            $PoshRS_jobs | WriteStream
+            $PoshRS_jobs | %{ 
+                $_ | WriteStream
+                if (@("Completed", "Failed", "Stopped") -contains $_.State) { $_.HasMoreData = $false }
+            }
         }
     }
 }
-
 
