@@ -1,5 +1,5 @@
 ---------
-|1.7.2.0|
+|1.7.2.1|
 ---------
 * Fixed Issue #83 (FunctionsToImport should include the function's Alias where applicable)
 
