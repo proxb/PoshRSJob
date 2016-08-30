@@ -22,6 +22,19 @@ Switch ($PSVersion) {
 }
 #>
 
+function Test-RSJob([bool]$FullPiping=$true) {
+    $ScriptBlock = { "{0}: {1}" -f $_, [DateTime]::Now; Start-Sleep -Seconds 5 }
+    $params = @{ Batch='throttletest'; ScriptBlock=$ScriptBlock; Throttle=5 }
+    if ($FullPiping) {
+        $jobs = 1..25 | Start-RSJob @params
+    }
+    else {
+        $jobs = 1..25 | Foreach-Object { $_ | Start-RSJob @params }
+    }
+    $jobs | Wait-RSJob | Receive-RSJob
+    $jobs | Remove-RSJob
+}
+
 Describe "PoshRSJob PS$($PSVersion)" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
@@ -225,6 +238,21 @@ Describe "Wait-RSJob PS$PSVersion" {
             ( $EndDate - $StartDate ).TotalSeconds -gt 5 | Should be $True
         }
     }
+}
+
+Describe "Test RSJob Throttling" {
+	It "Full Pipe input" {
+		$StartDate = Get-Date
+		Test-RSJob $true
+        	$EndDate = Get-Date           
+		( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
+	}
+	It "OneByOne Pipe input" {
+		$StartDate = Get-Date
+		Test-RSJob $false
+        	$EndDate = Get-Date           
+        	( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
+	}
 }
 
 Describe "Module OnRemove Actions PS$PSVersion" {
