@@ -126,14 +126,16 @@ Function Stop-RSJob {
         } Else {
             $ToStop = $List
         }
-        [System.Threading.Monitor]::Enter($PoshRS_jobs.syncroot) 
-        $ToStop | ForEach {            
-            Write-Verbose "Stopping $($_.InstanceId)"
-            if ($_.State -ne 'Completed') {
-                Write-Verbose "Killing job $($_.InstanceId)"
-                [void] $_.InnerJob.Stop()
+        If ($ToStop) {
+            [System.Threading.Monitor]::Enter($PoshRS_jobs.syncroot)         
+            $ToStop | ForEach {            
+                Write-Verbose "Stopping $($_.InstanceId)"
+                if ($_.State -ne 'Completed') {
+                    Write-Verbose "Killing job $($_.InstanceId)"
+                    [void] $_.InnerJob.Stop()
+                }
             }
+            [System.Threading.Monitor]::Exit($PoshRS_jobs.syncroot)
         }
-        [System.Threading.Monitor]::Exit($PoshRS_jobs.syncroot)
     }  
 }

@@ -1,4 +1,9 @@
 ---------
+|1.7.2.3|
+---------
+* Fixed Issue #87 (Stop-RSJob gives an error if it has no input)
+
+---------
 |1.7.2.2|
 ---------
 * Fixed Issue #59 (Receive-RSJob doesn't clear a job's HasMoreData state)
