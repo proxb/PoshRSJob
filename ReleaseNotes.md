@@ -1,4 +1,9 @@
 ---------
+|1.7.2.2|
+---------
+* Fixed Issue #59 (Receive-RSJob doesn't clear a job's HasMoreData state)
+
+---------
 |1.7.2.1|
 ---------
 * Fixed Issue #83 (FunctionsToImport should include the function's Alias where applicable)
