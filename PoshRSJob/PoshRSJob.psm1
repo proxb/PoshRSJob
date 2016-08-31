@@ -1,8 +1,9 @@
 $ScriptPath = Split-Path $MyInvocation.MyCommand.Path
 $PSModule = $ExecutionContext.SessionState.Module 
 $PSModuleRoot = $PSModule.ModuleBase
-
 If ($PSVersionTable.PSEdition -eq 'Core') {
+#PowerShell V4 and below will throw a parser error even if I never use classes
+@'
     class V2UsingVariable {
         [string]$Name
         [string]$NewName
@@ -42,6 +43,7 @@ If ($PSVersionTable.PSEdition -eq 'Core') {
         [bool]$Completed = $False
         [string]$Batch
     }
+'@ | Invoke-Expression
 }
 Else {
     Add-Type @"
@@ -168,7 +170,7 @@ $PoshRS_RunspacePoolCleanup.Flag=$True
 $PoshRS_RunspacePoolCleanup.Host=$Host
 #5 minute timeout for unused runspace pools
 $PoshRS_RunspacePoolCleanup.Timeout = [timespan]::FromMinutes(5).Ticks
-$InitialSessionState = [initialsessionstate]::CreateDefault()
+$InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
  
 #Create Type Collection so the object will work properly
 $Types = Get-ChildItem "$($PSScriptRoot)\TypeData" -Filter *Types* | Select -ExpandProperty Fullname

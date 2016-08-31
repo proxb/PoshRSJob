@@ -253,7 +253,11 @@ Function Start-RSJob {
             $IsPipeline = $True
             $IgnoreProcess = $False
             #[void]$list.AddRange(@($PSCmdlet.SessionState.PSVariable.Get('_') | Select-Object -ExpandProperty Value))
-            $InputObject = $PSBoundParameters['InputObject'] = @($PSCmdlet.SessionState.PSVariable.Get('_') | Select-Object -ExpandProperty Value)
+            Try {
+                $InputObject = $PSBoundParameters['InputObject'] = @($PSCmdlet.SessionState.PSVariable.Get('_') | 
+                Select-Object -ExpandProperty Value)
+            }
+            Catch {}
         }
         Else {
             $IsPipeline = $True
