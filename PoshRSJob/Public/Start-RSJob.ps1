@@ -224,7 +224,7 @@ Function Start-RSJob {
                 }
 
                 #Check for an alias and add it as well
-                If ($Alias = Get-Alias -Definition $Function) {
+                If ($Alias = Get-Alias -Definition $Function -ErrorAction SilentlyContinue) {
                     $AliasEntry = New-Object System.Management.Automation.Runspaces.SessionStateAliasEntry -ArgumentList $Alias.Name,$Alias.Definition
                     $InitialSessionState.Commands.Add($AliasEntry)
                 }
