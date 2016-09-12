@@ -1,4 +1,9 @@
 ---------
+|1.7.2.5|
+---------
+* Fixed Issue #96 (Error when -FunctionsToLoad parameter is used and the Function does not have an alias)
+
+---------
 |1.7.2.4|
 ---------
 * Fixed Issue #92 (Cannot load module in PS4 due to "class" keyword)
