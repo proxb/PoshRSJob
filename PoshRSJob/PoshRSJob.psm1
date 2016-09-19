@@ -25,6 +25,7 @@ If ($PSVersionTable.PSEdition -eq 'Core') {
         [string]$Name
         [int]$ID
         [System.Management.Automation.PSInvocationState]$State
+        [object]$InputObject
         [string]$InstanceID
         [object]$Handle
         [object]$Runspace
@@ -76,6 +77,7 @@ Else {
         public string Name;
         public int ID;
         public System.Management.Automation.PSInvocationState State;
+        public object InputObject;
         public string InstanceID;
         public object Handle;
         public object Runspace;

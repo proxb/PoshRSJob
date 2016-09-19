@@ -505,6 +505,7 @@ Function Start-RSJob {
                 }
                 $Object = New-Object RSJob -Property @{
                     Name = $_JobName
+                    InputObject = $Item
                     InstanceID = [guid]::NewGuid().ToString()
                     ID = $ID  
                     Handle = $Handle
@@ -560,6 +561,7 @@ Function Start-RSJob {
             }
             $Object = New-Object RSJob -Property @{
                 Name = $_JobName
+                InputObject = $null
                 InstanceID = [guid]::NewGuid().ToString()
                 ID = $ID  
                 Handle = $Handle
