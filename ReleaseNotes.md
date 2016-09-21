@@ -1,4 +1,9 @@
 ---------
+|1.7.2.6|
+---------
+* Fixed Issue #99 (Add an InputObject property to RSJob)
+
+---------
 |1.7.2.5|
 ---------
 * Fixed Issue #96 (Error when -FunctionsToLoad parameter is used and the Function does not have an alias)
