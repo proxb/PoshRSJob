@@ -10,7 +10,7 @@ Provides an alternative to PSjobs with greater performance and less overhead to 
 Install-Module -Name PoshRSJob
 ```
 
-####Download the latest release (1.7.2.6)
+####Download the latest release (1.7.2.7)
 https://github.com/proxb/PoshRSJob/releases/download/1.7.2.7/PoshRSJob.zip
 
 
