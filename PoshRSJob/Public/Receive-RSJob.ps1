@@ -73,6 +73,7 @@ Function Receive-RSJob {
         $List = New-Object System.Collections.ArrayList
         $StringBuilder = New-Object System.Text.StringBuilder
         $Bound = $False
+        $IsInputObject = $False
 
         #Take care of bound parameters
         If ($PSBoundParameters['Name']) {
@@ -88,6 +89,7 @@ Function Receive-RSJob {
             $Bound = $True
         }
         If ($PSBoundParameters['InputObject']) {
+            $IsInputObject = $True
             [void]$list.AddRange($InputObject)
             $Bound = $True
         }
@@ -99,6 +101,7 @@ Function Receive-RSJob {
     }
     Process {
         If (-NOT $Bound -and $InputObject) {
+            $IsInputObject = $True
             $_ | WriteStream
             if (@("Completed", "Failed", "Stopped") -contains $_.State) { $_.HasMoreData = $false }
         }
@@ -134,14 +137,27 @@ Function Receive-RSJob {
         Write-Verbose "ScriptBlock: $($ScriptBlock)"
         If ($ScriptBlock) {
             Write-Verbose "Running Scriptblock"
-            $PoshRS_jobs | Where $ScriptBlock | %{ 
+            $PoshRS_jobs | Where $ScriptBlock | ForEach-Object{ 
                 $_ | WriteStream
-                if (@("Completed", "Failed", "Stopped") -contains $_.State) { $_.HasMoreData = $false }
+                if (@("Completed", "Failed", "Stopped") -contains $_.State) { 
+                    $_.HasMoreData = $false 
+                }
             }
-        } ElseIf ($Bound) {
-            $PoshRS_jobs | %{ 
+        } 
+        ElseIf ($IsInputObject) {
+            $List | ForEach-Object{ 
                 $_ | WriteStream
-                if (@("Completed", "Failed", "Stopped") -contains $_.State) { $_.HasMoreData = $false }
+                if (@("Completed", "Failed", "Stopped") -contains $_.State) { 
+                    $_.HasMoreData = $false 
+                }
+            }            
+        }
+        ElseIf ($Bound) {
+            $PoshRS_jobs | ForEach-Object{ 
+                $_ | WriteStream
+                if (@("Completed", "Failed", "Stopped") -contains $_.State) { 
+                    $_.HasMoreData = $false 
+                }
             }
         }
     }

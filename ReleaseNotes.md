@@ -1,4 +1,9 @@
 ---------
+|1.7.2.7|
+---------
+* Fixed Issue #102 (Receive-RsJob doesn't process -InputObject properly)
+
+---------
 |1.7.2.6|
 ---------
 * Fixed Issue #99 (Add an InputObject property to RSJob)
