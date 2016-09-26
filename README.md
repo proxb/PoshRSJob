@@ -11,7 +11,6 @@ Install-Module -Name PoshRSJob
 ```
 
 ####Download the latest release (1.7.2.6)
->>>>>>> origin/master
 https://github.com/proxb/PoshRSJob/releases/download/1.7.2.6/PoshRSJob.zip
 
 
