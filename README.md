@@ -11,7 +11,7 @@ Install-Module -Name PoshRSJob
 ```
 
 ####Download the latest release (1.7.2.6)
-https://github.com/proxb/PoshRSJob/releases/download/1.7.2.6/PoshRSJob.zip
+https://github.com/proxb/PoshRSJob/releases/download/1.7.2.7/PoshRSJob.zip
 
 
 More information and examples here: http://learn-powershell.net/2015/04/19/latest-updates-to-poshrsjob/
