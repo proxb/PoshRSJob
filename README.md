@@ -5,6 +5,8 @@ PoshRSJob 1.7.2.7
 
 Provides an alternative to PSjobs with greater performance and less overhead to run commands in the background, freeing up the console.
 
+###Be sure to check out and contribute to the [Wiki](https://github.com/proxb/PoshRSJob/wiki)!
+
 ####Download and install PoshRSJob using PowerShell PSGet:
 ```PowerShell
 Install-Module -Name PoshRSJob
