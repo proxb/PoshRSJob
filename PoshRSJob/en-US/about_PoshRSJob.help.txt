@@ -21,7 +21,6 @@ EXAMPLES
     run a command using the pipelined data.
 
 SEE ALSO
-    about_rsjobs
     Start-RSjob
     Stop-RSJob
     Get-RSJob

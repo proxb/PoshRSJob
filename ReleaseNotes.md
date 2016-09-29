@@ -1,4 +1,10 @@
 ---------
+|1.7.2.9|
+---------
+* Fixed Issue #101 (Wait-RsJob -State Completed with no input returns Attempted to divide by zero.)
+* Fixed Issue #108 (Caveats of Start-RSJob -ModulesToImport) - Using ForEach loop with PoshRSJob no longer works with this update due to issues that it brought with -ModulesToImport, -FunctionsToLoad and -PSSnapinsToImport where these would fail due to a runspacepool already being used.
+
+---------
 |1.7.2.7|
 ---------
 * Fixed Issue #102 (Receive-RsJob doesn't process -InputObject properly)

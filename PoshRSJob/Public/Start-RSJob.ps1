@@ -395,6 +395,7 @@ Function Start-RSJob {
 
         #region RunspacePool Creation        
         If (-NOT $PSBoundParameters.ContainsKey('Batch')) {
+            <#
             If ($PoshRS_RunspacePools.Count -gt 0) {
                 [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
                 $RSPObject = $PoshRS_RunspacePools[0]
@@ -405,6 +406,7 @@ Function Start-RSJob {
                 [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
             }
             Else {
+            #>
                 $Batch = $RunspacePoolID = [guid]::NewGuid().ToString()
                 Write-Verbose "Creating new runspacepool <$Batch>"
                 $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
@@ -426,9 +428,10 @@ Function Start-RSJob {
                 [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
                 [void]$PoshRS_RunspacePools.Add($RSPObject)
                 [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
-            }
+            #}
         }
-        Else {            
+        Else {    
+        <#        
             [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
             $__RSPObject = $PoshRS_RunspacePools | Where {
                 $_.RunspacePoolID -eq $Batch
@@ -439,6 +442,7 @@ Function Start-RSJob {
                 $RSPObject.LastActivity = $RSPObject.LastActivity.AddMinutes(5)
             }
             Else {
+            #>
                 Write-Verbose "Creating new runspacepool <$Batch>"
                 $RunspacePoolID = $Batch
                 $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
@@ -457,8 +461,10 @@ Function Start-RSJob {
                     MaxJobs = $RunspacePool.GetMaxRunspaces()
                     RunspacePoolID = $RunspacePoolID
                 }
+                
+                [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) #Temp add
                 [void]$PoshRS_RunspacePools.Add($RSPObject)
-            }
+            #}
             [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)            
         }
         #endregion RunspacePool Creation

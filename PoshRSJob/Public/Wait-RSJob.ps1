@@ -115,7 +115,10 @@ Function Wait-RSJob {
             [void]$List.Add($_)
         }
     }
-    End {        
+    End {     
+        If ($List.count -eq 0) {
+            BREAK
+        }   
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
                 $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
