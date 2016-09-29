@@ -240,6 +240,7 @@ Describe "Wait-RSJob PS$PSVersion" {
     }
 }
 
+<#
 Describe "Test RSJob Throttling" {
 	It "Full Pipe input" {
 		$StartDate = Get-Date
@@ -254,6 +255,7 @@ Describe "Test RSJob Throttling" {
         	( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
 	}
 }
+#>
 
 Describe "Module OnRemove Actions PS$PSVersion" {
     Context 'Strict mode' {
