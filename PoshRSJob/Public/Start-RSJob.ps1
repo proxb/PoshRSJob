@@ -463,7 +463,7 @@ Function Start-RSJob {
                     RunspacePoolID = $RunspacePoolID
                 }
                 
-                [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) #Temp add
+                #[System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) #Temp add
                 [void]$PoshRS_RunspacePools.Add($RSPObject)
             }
             [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)            
