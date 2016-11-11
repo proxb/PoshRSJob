@@ -155,7 +155,7 @@ $PoshRS_jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
                 #Return type from Invoke() is a generic collection; need to verify the first index is not NULL
                 If (($Data.Count -gt 0) -AND (-NOT ($Data.Count -eq 1 -AND $Null -eq $Data[0]))) {   
                     $job.output = $Data
-                    $job.HasMoreData = $True                            
+                    $job.HasMoreData = $True                           
                 }              
                 $Error.Clear()
             } 
@@ -189,6 +189,7 @@ $PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("ParentHost",
 $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
     #Routine to handle completed runspaces
     Do { 
+        #$ParentHost.ui.WriteVerboseLine("Beginning Do Statement")
         $DisposePoshRS_RunspacePools=$False  
         If ($PoshRS_RunspacePools.Count -gt 0) { 
             #$ParentHost.ui.WriteVerboseLine("$($PoshRS_RunspacePools | Out-String)")           
@@ -217,9 +218,11 @@ $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
                     [void]$PoshRS_RunspacePools.Remove($_)
                 }
             }
-            Remove-Variable TempCollection
+            #Not setting this to silentlycontinue seems to cause another runspace to be created if an error occurs
+            Remove-Variable TempCollection -ErrorAction SilentlyContinue
             [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
         }
+            #$ParentHost.ui.WriteVerboseLine("Sleeping")
         Start-Sleep -Milliseconds 5000     
     } while ($PoshRS_RunspacePoolCleanup.Flag)
 })

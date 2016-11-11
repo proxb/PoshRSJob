@@ -1,4 +1,10 @@
 ---------
+|1.7.3.0|
+---------
+* Fixed Issue #112 (TabExpansion puts a small error in $error)
+* Fixed Issue #115 (Multiple runspaces are being created when running Start-RSJob)
+
+---------
 |1.7.2.9|
 ---------
 * Fixed Issue #101 (Wait-RsJob -State Completed with no input returns Attempted to divide by zero.)

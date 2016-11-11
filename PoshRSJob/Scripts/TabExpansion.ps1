@@ -17,12 +17,13 @@ $completion_Name = {
     }
 }
 #endregion Job Name
-If (-not (Get-Variable -Scope Global -Name Options -ErrorAction:SilentlyContinue)) { 
+If (-not (Get-Variable -Scope Global | Where {$_.Name -eq "options"})) { 
     $global:options = @{
         CustomArgumentCompleters = @{}
         NativeArgumentCompleters = @{}
     }
 }
+
 $global:options['CustomArgumentCompleters']['Get-RSJob:Id'] = $completion_ID
 $global:options['CustomArgumentCompleters']['Get-RSJob:Name'] = $completion_Name
 $global:options['CustomArgumentCompleters']['Remove-RSJob:Id'] = $completion_ID

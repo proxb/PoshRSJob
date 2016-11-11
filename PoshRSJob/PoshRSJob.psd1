@@ -1,7 +1,7 @@
 ﻿
 #
 # PoshRSJob
-# Version 1.7.2.9
+# Version 1.7.3.0
 #
 # Boe Prox (c) 2014
 # http://learn-powershell.net
@@ -14,7 +14,7 @@
 ModuleToProcess = 'PoshRSJob.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.7.2.9'
+ModuleVersion = '1.7.3.0'
 
 # ID used to uniquely identify this module
 GUID = '9b17fb0f-e939-4a5c-b194-3f2247452972'
@@ -90,7 +90,32 @@ FileList = 'PoshRSJob.psd1', 'PoshRSJob.psm1', 'en-US\about_PoshRSJob.help.txt',
 'Public\Remove-RSJob.ps1', 'Public\Start-RSJob.ps1', 'Public\Stop-RSJob.ps1', 'Public\Wait-RSJob.ps1', 'TypeData\PoshRSJob.Format.ps1xml', 'TypeData\PoshRSJob.Types.ps1xml'
 
 # Private data to pass to the module specified in ModuleToProcess
-PrivateData = ''
-
+PrivateData = @{
+    PSData = @{
+			# The primary categorization of this module (from the TechNet Gallery tech tree).
+			Category = "Multithreading"
+			
+			# Keyword tags to help users find this module via navigations and search.
+			Tags = @('PoshRSJob', 'Runspace','RunspacePool', 'Linux', 'PowerShellCore', 'RSJob')
+			
+			# The web address of an icon which can be used in galleries to represent this module
+			#IconUri = ''
+			
+			# The web address of this module's project or support homepage.
+			ProjectUri = "https://github.com/proxb/PoshRSJob"
+			
+			# The web address of this module's license. Points to a page that's embeddable and linkable.
+			LicenseUri = "https://opensource.org/licenses/MIT"
+			
+			# Release notes for this particular version of the module
+			# ReleaseNotes = False
+			
+			# If true, the LicenseUrl points to an end-user license (not just a source license) which requires the user agreement before use.
+			# RequireLicenseAcceptance = ""
+			
+			# Indicates this is a pre-release/testing version of the module.
+			IsPrerelease = 'False'
+		}
+    }
 }
 
