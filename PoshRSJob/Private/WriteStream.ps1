@@ -15,7 +15,7 @@
             {
                 Switch ($Stream) {
                     "Verbose" { $IndividualJob | Select -ExpandProperty Verbose | ForEach { $host.ui.WriteVerboseLine($_)} }                    
-                    "Debug" { $IndividualJob | Select -ExpandProperty Verbose | ForEach { $host.ui.WriteDebugLine($_)} }
+                    "Debug" { $IndividualJob | Select -ExpandProperty Debug | ForEach { $host.ui.WriteDebugLine($_)} }
                     "Warning" { $IndividualJob | Select -ExpandProperty Warning | ForEach { $host.ui.WriteWarningLine($_) } }
                     "Error"   { $IndividualJob.Error.Exception | Select -ExpandProperty Message | ForEach {$host.ui.WriteErrorLine($_)} }
                     "Output"  { $IndividualJob | Select -ExpandProperty Output }
