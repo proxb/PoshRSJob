@@ -97,7 +97,7 @@ Function Receive-RSJob {
             [void]$list.AddRange($Batch)
             $Bound = $True
         }
-        Write-Verbose "Bound: $Bound"
+        Write-Debug "Bound: $Bound"
     }
     Process {
         If (-NOT $Bound -and $InputObject) {
@@ -110,7 +110,7 @@ Function Receive-RSJob {
         }
     }
     End {
-        Write-Verbose "ParameterSet: $($PSCmdlet.parametersetname)"
+        Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
                 $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
@@ -134,9 +134,9 @@ Function Receive-RSJob {
             } 	
             Default {$ScriptBlock=$Null}
         }
-        Write-Verbose "ScriptBlock: $($ScriptBlock)"
+        Write-Debug "ScriptBlock: $($ScriptBlock)"
         If ($ScriptBlock) {
-            Write-Verbose "Running Scriptblock"
+            Write-Debug "Running Scriptblock"
             $PoshRS_jobs | Where $ScriptBlock | ForEach-Object{ 
                 $_ | WriteStream
                 if (@("Completed", "Failed", "Stopped") -contains $_.State) { 
