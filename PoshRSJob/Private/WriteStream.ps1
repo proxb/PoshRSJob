@@ -14,9 +14,9 @@
             If (($IndividualJob.$Stream.Count -gt 0) -AND (-NOT ($Null -eq $IndividualJob.$Stream)))
             {
                 Switch ($Stream) {
-                    "Verbose" { $IndividualJob | Select -ExpandProperty Verbose | ForEach { $host.ui.WriteVerboseLine($_)} }                    
-                    "Debug" { $IndividualJob | Select -ExpandProperty Debug | ForEach { $host.ui.WriteDebugLine($_)} }
-                    "Warning" { $IndividualJob | Select -ExpandProperty Warning | ForEach { $host.ui.WriteWarningLine($_) } }
+                    "Verbose" { $IndividualJob | Select -ExpandProperty Verbose| Where { $_.Message } | ForEach { $host.ui.WriteVerboseLine($_)} }                    
+                    "Debug" { $IndividualJob | Select -ExpandProperty Debug| Where { $_.Message } | ForEach { $host.ui.WriteDebugLine($_)} }
+                    "Warning" { $IndividualJob | Select -ExpandProperty Warning| Where { $_.Message } | ForEach { $host.ui.WriteWarningLine($_) } }
                     "Error"   { $IndividualJob.Error.Exception | Select -ExpandProperty Message | ForEach {$host.ui.WriteErrorLine($_)} }
                     "Output"  { $IndividualJob | Select -ExpandProperty Output }
                 }

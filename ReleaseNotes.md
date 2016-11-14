@@ -1,8 +1,9 @@
 ---------
-|1.7.3.2|
+|1.7.3.3|
 ---------
 * Fixed Issue #116 (v1.7.3.0 is extremely slow)
 * Fixed Issue #75 (Feature Request: Add RunspaceID handling to Start-RSJob for better throttling support)
+* Fixed Issue #107 (Write-Stream throws lots of spurious errors on missing variables)
 * Added some better support for streams with Receive-RSJob
 
 ---------
