@@ -1,7 +1,7 @@
 ﻿
 #
 # PoshRSJob
-# Version 1.7.3.0
+# Version 1.7.3.3
 #
 # Boe Prox (c) 2014
 # http://learn-powershell.net
@@ -14,7 +14,7 @@
 ModuleToProcess = 'PoshRSJob.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.7.3.0'
+ModuleVersion = '1.7.3.3'
 
 # ID used to uniquely identify this module
 GUID = '9b17fb0f-e939-4a5c-b194-3f2247452972'
@@ -111,7 +111,7 @@ PrivateData = @{
 			# ReleaseNotes = False
 			
 			# If true, the LicenseUrl points to an end-user license (not just a source license) which requires the user agreement before use.
-			# RequireLicenseAcceptance = ""
+			RequireLicenseAcceptance = "False"
 			
 			# Indicates this is a pre-release/testing version of the module.
 			IsPrerelease = 'False'
