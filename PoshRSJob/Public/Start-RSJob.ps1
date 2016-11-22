@@ -394,46 +394,6 @@ Function Start-RSJob {
         Write-Debug "ScriptBlock: $($NewScriptBlock)"
 
         #region RunspacePool Creation        
-        <#
-        If (-NOT $PSBoundParameters.ContainsKey('Batch')) {
-            
-            If ($PoshRS_RunspacePools.Count -gt 0) {
-                [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
-                $RSPObject = $PoshRS_RunspacePools[0]
-                $Batch = $RSPObject.RunspacePoolID
-                Write-Verbose "Using current runspacepool <$($__RSPObject.RunspacePoolID)>"
-                #Update LastActivity so it doesn't get removed prematurely; runspacepool cleanup will update once it detects running jobs
-                $RSPObject.LastActivity = $RSPObject.LastActivity.AddMinutes(5)
-                [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
-            }
-            Else {
-            
-                $Batch = $RunspacePoolID = [guid]::NewGuid().ToString()
-                Write-Verbose "Creating new runspacepool <$Batch>"
-                $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
-                Try {
-                    #ApartmentState doesn't exist in Nano Server
-                    $RunspacePool.ApartmentState = 'STA'
-                } 
-                Catch {}
-                [void]$RunspacePool.SetMaxRunspaces($Throttle)
-                If ($PSVersionTable.PSVersion.Major -gt 2) {
-                    $RunspacePool.CleanupInterval = [timespan]::FromMinutes(5)    
-                }
-                $RunspacePool.Open()
-                $RSPObject = New-Object RSRunspacePool -Property @{
-                    RunspacePool = $RunspacePool
-                    MaxJobs = $RunspacePool.GetMaxRunspaces()
-                    RunspacePoolID = $RunspacePoolID
-                }
-                [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
-                [void]$PoshRS_RunspacePools.Add($RSPObject)
-                [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
-            #}
-        }
-        Else {    
-        #>
-                
             [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
             $__RSPObject = $PoshRS_RunspacePools | Where {
                 $_.RunspacePoolID -eq $Batch
@@ -461,13 +421,13 @@ Function Start-RSJob {
                     RunspacePool = $RunspacePool
                     MaxJobs = $RunspacePool.GetMaxRunspaces()
                     RunspacePoolID = $RunspacePoolID
+                    LastActivity = (Get-Date).AddMinutes(5)
                 }
                 
                 #[System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) #Temp add
                 [void]$PoshRS_RunspacePools.Add($RSPObject)
             }
             [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)            
-        <#}#>
         #endregion RunspacePool Creation
 
         If ($List.Count -gt 0) {
