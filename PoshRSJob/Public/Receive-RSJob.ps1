@@ -103,7 +103,9 @@ Function Receive-RSJob {
         If (-NOT $Bound -and $InputObject) {
             $IsInputObject = $True
             $_ | WriteStream
-            if (@("Completed", "Failed", "Stopped") -contains $_.State) { $_.HasMoreData = $false }
+            if (@("Completed", "Failed", "Stopped") -contains $_.State) { 
+                $_ | SetIsReceived -SetTrue
+            }
         }
         elseif (-Not $Bound) {
             [void]$List.Add($_)
@@ -140,7 +142,7 @@ Function Receive-RSJob {
             $PoshRS_jobs | Where $ScriptBlock | ForEach-Object{ 
                 $_ | WriteStream
                 if (@("Completed", "Failed", "Stopped") -contains $_.State) { 
-                    $_.HasMoreData = $false 
+                    $_ | SetIsReceived -SetTrue
                 }
             }
         } 
@@ -148,7 +150,7 @@ Function Receive-RSJob {
             $List | ForEach-Object{ 
                 $_ | WriteStream
                 if (@("Completed", "Failed", "Stopped") -contains $_.State) { 
-                    $_.HasMoreData = $false 
+                    $_ | SetIsReceived -SetTrue
                 }
             }            
         }
@@ -156,7 +158,7 @@ Function Receive-RSJob {
             $PoshRS_jobs | ForEach-Object{ 
                 $_ | WriteStream
                 if (@("Completed", "Failed", "Stopped") -contains $_.State) { 
-                    $_.HasMoreData = $false 
+                    $_ | SetIsReceived -SetTrue
                 }
             }
         }

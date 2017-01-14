@@ -1,4 +1,11 @@
 ---------
+|1.7.3.5|
+---------
+* #119 (Passing an empty batch to Wait-RSJob stops all further processing in the caller)
+* #95 (RSJob State does not reflect actual state of job)
+* #111 (Exception calling "BeginInvoke" with "0" argument(s): "Cannot perform the operation because the runspace pool is not in the 'Opened' state. The current state is 'Closed'." )
+
+---------
 |1.7.3.3|
 ---------
 * Fixed Issue #116 (v1.7.3.0 is extremely slow)

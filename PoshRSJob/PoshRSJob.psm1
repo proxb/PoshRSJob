@@ -1,8 +1,9 @@
 $ScriptPath = Split-Path $MyInvocation.MyCommand.Path
 $PSModule = $ExecutionContext.SessionState.Module 
 $PSModuleRoot = $PSModule.ModuleBase
+##TODO Added IsReceived properties and SetIsReceived function; not complete and needs tested //BCP 12/28/2016
 If ($PSVersionTable.PSEdition -eq 'Core') {
-#PowerShell V4 and below will throw a parser error even if I never use classes
+#PowerShell V4 and below will throw a parser error even if I never use the classes keyword
 @'
     class V2UsingVariable {
         [string]$Name
@@ -20,7 +21,6 @@ If ($PSVersionTable.PSEdition -eq 'Core') {
         [String]$RunspacePoolID
         [bool]$CanDispose = $False
     }
- 
     class RSJob {
         [string]$Name
         [int]$ID
@@ -37,12 +37,14 @@ If ($PSVersionTable.PSEdition -eq 'Core') {
         [System.Management.Automation.PSDataCollection[System.Management.Automation.DebugRecord]]$Debug
         [System.Management.Automation.PSDataCollection[System.Management.Automation.WarningRecord]]$Warning
         [System.Management.Automation.PSDataCollection[System.Management.Automation.ProgressRecord]]$Progress
-        [bool]$HasMoreData
+        [bool]$HasMoreData = $True
         [bool]$HasErrors
         [object]$Output
         [string]$RunspacePoolID
         [bool]$Completed = $False
         [string]$Batch
+        hidden [bool] $IsReceived = $False
+
     }
 '@ | Invoke-Expression
 }
@@ -71,7 +73,6 @@ Else {
         public string RunspacePoolID;
         public bool CanDispose = false;
     }
- 
     public class RSJob
     {
         public string Name;
@@ -89,24 +90,27 @@ Else {
         public System.Management.Automation.PSDataCollection<System.Management.Automation.DebugRecord> Debug;
         public System.Management.Automation.PSDataCollection<System.Management.Automation.WarningRecord> Warning;
         public System.Management.Automation.PSDataCollection<System.Management.Automation.ProgressRecord> Progress;
-        public bool HasMoreData;
+        public bool HasMoreData = true;
         public bool HasErrors;
         public object Output;
         public string RunspacePoolID;
         public bool Completed = false;
         public string Batch;
+        #pragma warning disable 414
+        private bool IsReceived = false;
+        #pragma warning restore 414
     }
 "@
 }
 
-#region RSJob Collections
+#region RSJob Variables
 Write-Verbose "Creating RS collections"
 New-Variable PoshRS_Jobs -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Global -Force
 New-Variable PoshRS_jobCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Global -Force
 New-Variable PoshRS_JobID -Value ([int64]0) -Option ReadOnly -Scope Global -Force
 New-Variable PoshRS_RunspacePools -Value ([System.Collections.ArrayList]::Synchronized([System.Collections.ArrayList]@())) -Option ReadOnly -Scope Global -Force
 New-Variable PoshRS_RunspacePoolCleanup -Value ([hashtable]::Synchronized(@{})) -Option ReadOnly -Scope Global -Force
-#endregion RSJob Collections
+#endregion RSJob Variables
 
 #region Cleanup Routine
 Write-Verbose "Creating routine to monitor RS jobs"
@@ -121,8 +125,7 @@ $PoshRS_jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
     #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("Begin Do Loop") 
     Do {   
         [System.Threading.Monitor]::Enter($PoshRS_Jobs.syncroot) 
-        Foreach($job in $PoshRS_Jobs) {
-            $job.state = $job.InnerJob.InvocationStateInfo.State
+        Foreach($job in $PoshRS_Jobs) {            
             If ($job.Handle.isCompleted -AND (-NOT $Job.Completed)) {   
                 #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) completed")  
                 Try {           
@@ -170,8 +173,8 @@ $PoshRS_jobCleanup.Handle = $PoshRS_jobCleanup.PowerShell.BeginInvoke()
 Write-Verbose "Creating routine to monitor Runspace Pools"
 $PoshRS_RunspacePoolCleanup.Flag=$True
 $PoshRS_RunspacePoolCleanup.Host=$Host
-#5 minute timeout for unused runspace pools
-$PoshRS_RunspacePoolCleanup.Timeout = [timespan]::FromMinutes(5).Ticks
+#2 minute timeout for unused runspace pools
+$PoshRS_RunspacePoolCleanup.Timeout = [timespan]::FromMinutes(2).Ticks
 $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
  
 #Create Type Collection so the object will work properly
@@ -203,6 +206,11 @@ $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
                         $RunspacePool.RunspacePool.Dispose()
                         $RunspacePool.CanDispose = $True
                         $DisposePoshRS_RunspacePools=$True
+
+                        #Perform garbage collection
+                        [gc]::Collect()
+                        Start-Sleep -Seconds 5
+                        [gc]::Collect()
                     }
                 } Else {
                     $RunspacePool.LastActivity = (Get-Date)

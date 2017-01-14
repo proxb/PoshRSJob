@@ -1,7 +1,7 @@
 ﻿
 #
 # PoshRSJob
-# Version 1.7.3.4
+# Version 1.7.3.5
 #
 # Boe Prox (c) 2014
 # http://learn-powershell.net
@@ -14,7 +14,7 @@
 ModuleToProcess = 'PoshRSJob.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.7.3.4'
+ModuleVersion = '1.7.3.5'
 
 # ID used to uniquely identify this module
 GUID = '9b17fb0f-e939-4a5c-b194-3f2247452972'
@@ -87,7 +87,8 @@ AliasesToExport = 'gsj','rmsj','rsj','spsj','ssj','wsj'
 FileList = 'PoshRSJob.psd1', 'PoshRSJob.psm1', 'en-US\about_PoshRSJob.help.txt', 'Private\ConvertScript.ps1', 'Private\ConvertScriptBlockV2.ps1', 
 'Private\FindFunction.ps1', 'Private\GetParamVariable.ps1', 'Private\GetUsingVariables.ps1', 'Private\GetUsingVariablesV2.ps1', 'Private\GetUsingVariableValues.ps1', 
 'Private\Increment.ps1', 'Private\IsExistingParamBlock.ps1', 'Private\RegisterScriptScopeFunction.ps1', 'Public\Get-RSJob.ps1', 'Public\Receive-RSJob.ps1', 
-'Public\Remove-RSJob.ps1', 'Public\Start-RSJob.ps1', 'Public\Stop-RSJob.ps1', 'Public\Wait-RSJob.ps1', 'TypeData\PoshRSJob.Format.ps1xml', 'TypeData\PoshRSJob.Types.ps1xml'
+'Public\Remove-RSJob.ps1', 'Public\Start-RSJob.ps1', 'Public\Stop-RSJob.ps1', 'Public\Wait-RSJob.ps1', 'TypeData\PoshRSJob.Format.ps1xml', 'TypeData\PoshRSJob.Types.ps1xml',
+'Private\SetIsReceived.ps1'
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = @{

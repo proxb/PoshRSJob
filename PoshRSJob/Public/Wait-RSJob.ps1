@@ -117,7 +117,7 @@ Function Wait-RSJob {
     }
     End {     
         If ($List.count -eq 0) {
-            BREAK
+            return
         }   
         Switch ($PSCmdlet.parametersetname) {
             'Name' {

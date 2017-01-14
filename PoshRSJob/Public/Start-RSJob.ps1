@@ -394,6 +394,7 @@ Function Start-RSJob {
         Write-Debug "ScriptBlock: $($NewScriptBlock)"
 
         #region RunspacePool Creation        
+                
             [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
             $__RSPObject = $PoshRS_RunspacePools | Where {
                 $_.RunspacePoolID -eq $Batch
@@ -401,7 +402,7 @@ Function Start-RSJob {
             If ($__RSPObject) {
                 Write-Verbose "Using current runspacepool <$($__RSPObject.RunspacePoolID)>"
                 $RSPObject = $__RSPObject
-                $RSPObject.LastActivity = $RSPObject.LastActivity.AddMinutes(5)
+                $RSPObject.LastActivity = Get-Date
             }
             Else {
                 Write-Verbose "Creating new runspacepool <$Batch>"
@@ -421,7 +422,7 @@ Function Start-RSJob {
                     RunspacePool = $RunspacePool
                     MaxJobs = $RunspacePool.GetMaxRunspaces()
                     RunspacePoolID = $RunspacePoolID
-                    LastActivity = (Get-Date).AddMinutes(5)
+                    LastActivity = Get-Date
                 }
                 
                 #[System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) #Temp add
@@ -482,7 +483,6 @@ Function Start-RSJob {
                     Command  = $ScriptBlock.ToString()
                     RunspacePoolID = $RunSpacePoolID
                     Batch = $Batch
-                    State = [System.Management.Automation.PSInvocationState]::Running
                 }
                 
                 $RSPObject.LastActivity = Get-Date
@@ -538,7 +538,6 @@ Function Start-RSJob {
                 Command  = $ScriptBlock.ToString()
                 RunspacePoolID = $RunSpacePoolID
                 Batch = $Batch
-                State = [System.Management.Automation.PSInvocationState]::Running
             }
             
             $RSPObject.LastActivity = Get-Date
