@@ -283,7 +283,7 @@ New-Alias -Name wsj -Value Wait-RSJob -Force
 #endregion Aliases
 
 #region Handle Module Removal
-$ExecutionContext.SessionState.Module.OnRemove ={
+$PoshRS_OnRemoveScript = {
     $PoshRS_jobCleanup.Flag=$False
     $PoshRS_RunspacePoolCleanup.Flag=$False
     #Let sit for a second to make sure it has had time to stop
@@ -298,6 +298,8 @@ $ExecutionContext.SessionState.Module.OnRemove ={
     Remove-Variable PoshRS_RunspacePoolCleanup -Scope Global -Force
     Remove-Variable PoshRS_RunspacePools -Scope Global -Force
 }
+$ExecutionContext.SessionState.Module.OnRemove += $PoshRS_OnRemoveScript
+Register-EngineEvent -SourceIdentifier ([System.Management.Automation.PsEngineEvent]::Exiting) -Action $PoshRS_OnRemoveScript
 #endregion Handle Module Removal
 
 #region Export Module Members
