@@ -9,7 +9,7 @@
     Write-Verbose "PSCallStacks: `n$($PSCallStack|Out-String)"
     If ($PSCallStack.count -gt 1) {
         #Ensure that I always get the second item in the call stack
-        $CallStack = $PSCallStack[-2]
+        $CallStack = $PSCallStack | Select-Object -First 1 -Skip 2
         Switch ($PSVersionTable.PSVersion.Major) {
             '2' {
                 $ScriptBlock = Get-Content $CallStack.ScriptName
