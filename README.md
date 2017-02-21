@@ -1,4 +1,4 @@
-PoshRSJob 1.7.3.5
+PoshRSJob 1.7.3.6
 ===================
 
 [![Build status](https://ci.appveyor.com/api/projects/status/svrd4ho4otugki24?svg=true)](https://ci.appveyor.com/project/proxb/poshrsjob) [![Join the chat at https://gitter.im/proxb/PoshRSJob](https://badges.gitter.im/proxb/PoshRSJob.svg)](https://gitter.im/proxb/PoshRSJob?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -12,8 +12,8 @@ Provides an alternative to PSjobs with greater performance and less overhead to 
 Install-Module -Name PoshRSJob
 ```
 
-####Download the latest release (1.7.3.5)
-https://github.com/proxb/PoshRSJob/releases/download/1.7.3.5/PoshRSJob.zip
+####Download the latest release (1.7.3.6)
+https://github.com/proxb/PoshRSJob/releases/download/1.7.3.6/PoshRSJob.zip
 
 
 More information and examples here: http://learn-powershell.net/2015/04/19/latest-updates-to-poshrsjob/

@@ -1,4 +1,10 @@
 ---------
+|1.7.3.6|
+---------
+* (FunctionsToLoad doesn't work if a script is called within a script)
+* #124 (powershell_ise processes are left around once PoshRSJob module is loaded)
+
+---------
 |1.7.3.5|
 ---------
 * #119 (Passing an empty batch to Wait-RSJob stops all further processing in the caller)
