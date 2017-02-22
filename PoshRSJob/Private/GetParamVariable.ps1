@@ -4,7 +4,7 @@
         [scriptblock]$ScriptBlock
     )     
     # Tokenize the script
-    $tokens = [Management.Automation.PSParser]::Tokenize($ScriptBlock, [ref]$null) | Where {
+    [array] $tokens = [Management.Automation.PSParser]::Tokenize($ScriptBlock, [ref]$null) | Where-Object {
         $_.Type -ne 'NewLine'
     }
 

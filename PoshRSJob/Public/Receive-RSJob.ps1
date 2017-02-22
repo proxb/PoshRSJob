@@ -115,22 +115,22 @@ Function Receive-RSJob {
         Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
                 [void]$StringBuilder.Append("`$_.Name -match $Items") 
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                    
             }
             'Id' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$StringBuilder.Append("`$_.Id -match $Items") 
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                
             }
             'Guid' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$StringBuilder.Append("`$_.InstanceId -match $Items")   
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())   
             }
             'Batch' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$StringBuilder.Append("`$_.batch -match $Items")   
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString()) 
             } 	
@@ -139,7 +139,7 @@ Function Receive-RSJob {
         Write-Debug "ScriptBlock: $($ScriptBlock)"
         If ($ScriptBlock) {
             Write-Debug "Running Scriptblock"
-            $PoshRS_jobs | Where $ScriptBlock | ForEach-Object{ 
+            $PoshRS_jobs | Where-Object $ScriptBlock | ForEach-Object{ 
                 $_ | WriteStream
                 if (@("Completed", "Failed", "Stopped") -contains $_.State) { 
                     $_ | SetIsReceived -SetTrue

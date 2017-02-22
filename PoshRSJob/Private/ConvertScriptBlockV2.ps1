@@ -10,7 +10,7 @@
     $Tokens = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)
     $StringBuilder = New-Object System.Text.StringBuilder
     $UsingHash = @{}
-    $UsingVariable | ForEach {
+    $UsingVariable | ForEach-Object {
         $UsingHash["Using:$($_.Name)"] = $_.NewVarName
     }
     $HasParam = IsExistingParamBlock -ScriptBlock $ScriptBlock
@@ -19,7 +19,7 @@
         [void]$Params.Add('$_')
     }
     If ($UsingVariable) {        
-        [void]$Params.AddRange(@($UsingVariable | Select -expand NewName))
+        [void]$Params.AddRange(@($UsingVariable | Select-Object -ExpandProperty NewName))
     } 
     $NewParams = $Params -join ', '  
     If (-Not $HasParam) {
