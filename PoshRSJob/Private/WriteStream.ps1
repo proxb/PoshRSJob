@@ -11,14 +11,14 @@
     Process {
         ForEach ($Stream in $Streams)
         {
-            If (($IndividualJob.$Stream.Count -gt 0) -AND (-NOT ($Null -eq $IndividualJob.$Stream)))
+            If (($IndividualJob.$Stream))
             {
                 Switch ($Stream) {
-                    "Verbose" { $IndividualJob | Select -ExpandProperty Verbose| Where { $_.Message } | ForEach { $host.ui.WriteVerboseLine($_)} }                    
-                    "Debug" { $IndividualJob | Select -ExpandProperty Debug| Where { $_.Message } | ForEach { $host.ui.WriteDebugLine($_)} }
-                    "Warning" { $IndividualJob | Select -ExpandProperty Warning| Where { $_.Message } | ForEach { $host.ui.WriteWarningLine($_) } }
-                    "Error"   { $IndividualJob.Error.Exception | Select -ExpandProperty Message | ForEach {$host.ui.WriteErrorLine($_)} }
-                    "Output"  { $IndividualJob | Select -ExpandProperty Output }
+                    "Verbose" { $IndividualJob | Select-Object -ExpandProperty Verbose| Where-Object { $_.Message } | ForEach-Object { $host.ui.WriteVerboseLine($_)} }                    
+                    "Debug" { $IndividualJob | Select-Object -ExpandProperty Debug| Where-Object { $_.Message } | ForEach-Object { $host.ui.WriteDebugLine($_)} }
+                    "Warning" { $IndividualJob | Select-Object -ExpandProperty Warning| Where-Object { $_.Message } | ForEach-Object { $host.ui.WriteWarningLine($_) } }
+                    "Error"   { $IndividualJob.Error.Exception | Select-Object -ExpandProperty Message | ForEach-Object {$host.ui.WriteErrorLine($_)} }
+                    "Output"  { $IndividualJob | Select-Object -ExpandProperty Output }
                 }
             }
 

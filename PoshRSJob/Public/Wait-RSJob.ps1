@@ -121,23 +121,23 @@ Function Wait-RSJob {
         }   
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
                 [void]$WhereList.Add("`$_.Name -match $Items")                    
             }
             'Id' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.Id -match $Items")                
             }
             'Guid' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.InstanceId -match $Items")  
             }
             'Job' {
-                $Items = '"{0}"' -f (($list | Select -Expand Id | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | Select-Object -ExpandProperty Id | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.id -match $Items")
             }	
             'Batch' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.batch -match $Items")
             }            		
         }
@@ -154,17 +154,18 @@ Function Wait-RSJob {
         If ($ScriptBlock) {
             Write-Verbose "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
-            $FilteredJobs = @($list | Where $ScriptBlock)
+            $FilteredJobs = @($list | Where-Object $ScriptBlock)
             $WaitJobs = $FilteredJobs
             $TotalJobs = $FilteredJobs.Count
             Write-Verbose "$($FilteredJobs.Count)"
-			$Date = Get-Date
-			Do{               
+            $Date = Get-Date
+            $Completed = 0
+            Do{               
                 #only ever check $WaitJobs State once per loop, and do all operations based on that snapshot to avoid bugs where the state of a job may have changed mid loop
                 $JustFinishedJobs = New-Object System.Collections.ArrayList
                 $RunningJobs = New-Object System.Collections.ArrayList
                 ForEach ($WaitJob in $WaitJobs) {
-                    If($WaitJob.State -match 'Completed|Failed|Stopped|Suspended|Disconnected') {
+                    If($WaitJob.State -match 'Completed|Failed|Stopped|Suspended|Disconnected' -and $WaitJob.Completed) {
                         [void]$JustFinishedJobs.Add($WaitJob)
                     } Else {
                         [void]$RunningJobs.Add($WaitJob)
@@ -172,25 +173,23 @@ Function Wait-RSJob {
                 }
                 $WaitJobs = $RunningJobs
 
-                #Wait just a bit so the HasMoreData can update if needed
-                Start-Sleep -Milliseconds 100
                 $JustFinishedJobs
 
                 $Completed += $JustFinishedJobs.Count
-				Write-Verbose "Wait: $($Waitjobs.Count)"
+                Write-Verbose "Wait: $($Waitjobs.Count)"
                 Write-Verbose "Completed: ($Completed)"
                 Write-Verbose "Total: ($Totaljobs)"
                 Write-Verbose "Status: $($Completed/$TotalJobs)"
                 If ($PSBoundParameters.ContainsKey('ShowProgress')) {
                     Write-Progress -Activity "RSJobs Tracker" -Status ("Remaining Jobs: {0}" -f $Waitjobs.Count) -PercentComplete (($Completed/$TotalJobs)*100)
                 }
-				if($Timeout){
-					if((New-Timespan $Date).TotalSeconds -ge $Timeout){
-						$TimedOut = $True
+                if($Timeout){
+                    if((New-Timespan $Date).TotalSeconds -ge $Timeout){
+                        $TimedOut = $True
                         break
-					}
-				}		
-			} 
+                    }
+                }		
+            } 
             While($Waitjobs.Count -ne 0)
         }
     }

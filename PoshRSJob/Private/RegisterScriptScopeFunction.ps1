@@ -23,7 +23,7 @@
                 }
             }
             Write-Verbose ("Found {0} functions" -f $Functions.count)
-            Write-Verbose "Functions found in callstack $Callstack`n$($Functions | Select-Object -Expand Name|Out-String)"
+            Write-Verbose "Functions found in callstack $Callstack`n$($Functions | Select-Object -ExpandProperty Name|Out-String)"
             if ($Functions) {
                 $Functions | ForEach-Object {
                     If ($PSBoundParameters.ContainsKey('Name')) {

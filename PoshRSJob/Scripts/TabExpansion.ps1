@@ -1,4 +1,8 @@
 ﻿#region Custom Argument Completors
+#Global variables are required for this functionality (Invoke-ScriptAnalyzer)
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "global:options")]
+param()
+
 #region Job ID
 $completion_ID = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameter)
@@ -17,7 +21,7 @@ $completion_Name = {
     }
 }
 #endregion Job Name
-If (-not (Get-Variable -Scope Global | Where {$_.Name -eq "options"})) { 
+If (-not (Get-Variable -Scope Global | Where-Object {$_.Name -eq "options"})) { 
     $global:options = @{
         CustomArgumentCompleters = @{}
         NativeArgumentCompleters = @{}
@@ -33,5 +37,7 @@ $global:options['CustomArgumentCompleters']['Stop-RSJob:Name'] = $completion_Nam
 $global:options['CustomArgumentCompleters']['Receive-RSJob:Id'] = $completion_ID
 $global:options['CustomArgumentCompleters']['Receive-RSJob:Name'] = $completion_Name
 
-$function:tabexpansion2 = $function:tabexpansion2 -replace 'End\r\n{','End { if ($null -ne $options) { $options += $global:options} else {$options = $global:options}'
+if (Get-Item function:tabexpansion[2]) {
+    $function:tabexpansion2 = $function:tabexpansion2 -replace 'End\r\n{','End { if ($null -ne $options) { $options += $global:options} else {$options = $global:options}'
+}
 #endregion Custom Argument Completors

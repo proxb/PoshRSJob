@@ -17,7 +17,7 @@
             Else {
                 $This.InnerJob.InvocationStateInfo.State
             }
-            If ($PSVersionTable.PSEdition -eq 'Core') {
+            If ($PSVersionTable['PSEdition'] -and $PSVersionTable.PSEdition -eq 'Core') {
                 $IsReceived =$This.IsReceived
             }
             Else {
@@ -39,7 +39,7 @@
                     }
                 }
                 Else {
-                    If ($This.Output.Count -gt 0 -AND (-NOT [string]::IsNullOrEmpty($This.Output))) {
+                    If ($This.Output -AND (-NOT [string]::IsNullOrEmpty($This.Output))) {
                         $True
                     }
                     Else {

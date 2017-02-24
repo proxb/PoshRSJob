@@ -100,6 +100,7 @@ Function Get-RSJob {
         $WhereList = New-Object System.Collections.ArrayList
         
         #Take care of bound parameters
+        $Bound = $False
         If ($PSBoundParameters['Name']) {
             [void]$list.AddRange($Name)
             $Bound = $True
@@ -130,23 +131,23 @@ Function Get-RSJob {
     End {        
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
                 [void]$WhereList.Add("`$_.Name -match $Items")                    
             }
             'Id' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.Id -match $Items")                
             }
             'Guid' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.InstanceId -match $Items")  
             }
             'Job' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_.Id}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_.Id}) -join '|')
                 [void]$WhereList.Add("`$_.id -match $Items")
             }   
             'Batch' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$WhereList.Add("`$_.batch -match $Items")
             }                      
         }
@@ -160,13 +161,10 @@ Function Get-RSJob {
         If ($WhereList.count -gt 0) {
             $WhereString = $WhereList -join ' -AND '
             $WhereBlock = [scriptblock]::Create($WhereString)
-        }               
-        If ($WhereBlock) {
             Write-Debug "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
-            $PoshRS_Jobs | Where $WhereBlock 
-        } 
-        Else {
+            $PoshRS_Jobs | Where-Object $WhereBlock 
+        } Else {
             $PoshRS_Jobs
         }
     }

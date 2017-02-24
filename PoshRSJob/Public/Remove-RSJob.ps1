@@ -35,7 +35,7 @@ Function Remove-RSJob {
             -----------
             Deletes all jobs with a State of Completed.
 
-        .EXAMPLE
+            .EXAMPLE
             Remove-RSJob -ID 1,5,78
 
             Description
@@ -72,6 +72,7 @@ Function Remove-RSJob {
         $StringBuilder = New-Object System.Text.StringBuilder
 
         #Take care of bound parameters
+        $Bound = $False
         If ($PSBoundParameters['Name']) {
             [void]$list.AddRange($Name)
             $Bound = $True
@@ -102,22 +103,22 @@ Function Remove-RSJob {
         Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
                 [void]$StringBuilder.Append("`$_.Name -match $Items") 
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                    
             }
             'Id' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$StringBuilder.Append("`$_.Id -match $Items") 
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                
             }
             'Guid' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$StringBuilder.Append("`$_.InstanceId -match $Items")   
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())   
             }
             'Batch' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$StringBuilder.Append("`$_.batch -match $Items")   
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())   
             } 	
@@ -125,12 +126,12 @@ Function Remove-RSJob {
         }
         If ($ScriptBlock) {
             Write-Verbose "Using ScriptBlock"
-            $ToRemove = $PoshRS_jobs | Where $ScriptBlock
+            $ToRemove = $PoshRS_jobs | Where-Object $ScriptBlock
         } Else {
             $ToRemove = $List
         }
         [System.Threading.Monitor]::Enter($PoshRS_Jobs.syncroot) 
-        $ToRemove | ForEach {
+        $ToRemove | ForEach-Object {
             If ($PSCmdlet.ShouldProcess("Name: $($_.Name), associated with JobID $($_.Id)",'Remove')) {
                 If ($_.State -notmatch 'Completed|Failed|Stopped') {
                     If ($PSBoundParameters.ContainsKey('Force')) {

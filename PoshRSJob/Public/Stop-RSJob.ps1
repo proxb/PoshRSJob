@@ -32,7 +32,7 @@ Function Stop-RSJob {
             -----------
             Stop all jobs with a State of Completed.
 
-        .EXAMPLE
+            .EXAMPLE
             Stop-RSJob -ID 1,5,78
 
             Description
@@ -67,6 +67,7 @@ Function Stop-RSJob {
         $StringBuilder = New-Object System.Text.StringBuilder
 
         #Take care of bound parameters
+        $Bound = $False
         If ($PSBoundParameters['Name']) {
             [void]$list.AddRange($Name)
             $Bound = $True
@@ -99,22 +100,22 @@ Function Stop-RSJob {
         Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
         Switch ($PSCmdlet.parametersetname) {
             'Name' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
                 [void]$StringBuilder.Append("`$_.Name -match $Items") 
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                    
             }
             'Id' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$StringBuilder.Append("`$_.Id -match $Items") 
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                
             }
             'Guid' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$StringBuilder.Append("`$_.InstanceId -match $Items")   
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())   
             }
             'Batch' {
-                $Items = '"{0}"' -f (($list | ForEach {"^{0}$" -f $_}) -join '|')
+                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
                 [void]$StringBuilder.Append("`$_.batch -match $Items")   
                 $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString()) 
             } 	
@@ -122,13 +123,13 @@ Function Stop-RSJob {
         }
         If ($ScriptBlock) {
             Write-Verbose "Using ScriptBlock"
-            $ToStop = $PoshRS_jobs | Where $ScriptBlock
+            $ToStop = $PoshRS_jobs | Where-Object $ScriptBlock
         } Else {
             $ToStop = $List
         }
         If ($ToStop) {
             [System.Threading.Monitor]::Enter($PoshRS_jobs.syncroot)         
-            $ToStop | ForEach {            
+            $ToStop | ForEach-Object {            
                 Write-Verbose "Stopping $($_.InstanceId)"
                 if ($_.State -ne 'Completed') {
                     Write-Verbose "Killing job $($_.InstanceId)"

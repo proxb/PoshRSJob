@@ -39,7 +39,7 @@ Describe "PoshRSJob PS$($PSVersion)" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
         It 'should load all functions' {
-            $Commands = @( Get-Command -CommandType Function -Module PoshRSJob | Select -ExpandProperty Name)
+            $Commands = @( Get-Command -CommandType Function -Module PoshRSJob | Select-Object -ExpandProperty Name)
             $Commands.count | Should be 6
             $Commands -contains "Get-RSJob"     | Should be $True
             $Commands -contains "Receive-RSJob" | Should be $True
@@ -49,7 +49,7 @@ Describe "PoshRSJob PS$($PSVersion)" {
             $Commands -contains "Wait-RSJob"    | Should be $True
         }
         It 'should load all aliases' {
-            $Commands = @( Get-Command -CommandType Alias -Module PoshRSJob | Select -ExpandProperty Name)
+            $Commands = @( Get-Command -CommandType Alias -Module PoshRSJob | Select-Object -ExpandProperty Name)
             $Commands.count | Should be 6
             $Commands -contains "gsj"     | Should be $True
             $Commands -contains "rmsj" | Should be $True
@@ -126,7 +126,7 @@ Describe "Get-RSJob PS$PSVersion" {
         Set-StrictMode -Version latest
         It 'should return all job details' {
             $Output = @( Get-RSJob @Verbose )
-            $Props = $Output[0].PSObject.Properties | Select -ExpandProperty Name
+            $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
            
             $Output.count | Should be 11
             $Props -contains "Id" | Should be $True
@@ -135,7 +135,7 @@ Describe "Get-RSJob PS$PSVersion" {
         }       
         It 'should return job details based on ID' {
             $Output = @( Get-RSJob @Verbose -Id 1 )
-            $Props = $Output[0].PSObject.Properties | Select -ExpandProperty Name
+            $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
            
             $Output.count | Should be 1
             $Props -contains "Id" | Should be $True
@@ -144,7 +144,7 @@ Describe "Get-RSJob PS$PSVersion" {
         }
         It 'should return job details based on Name' {
             $Output = @( Get-RSJob @Verbose -Name Job2 )
-            $Props = $Output[0].PSObject.Properties | Select -ExpandProperty Name
+            $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
            
             $Output.count | Should be 1
             $Props -contains "Id" | Should be $True
@@ -167,9 +167,9 @@ Describe "Remove-RSJob PS$PSVersion" {
              $TestJobs = @( 1..5 | Start-RSJob @Verbose -ScriptBlock { "" } )
              Start-Sleep -Seconds 2
              $ThisJobId = $TestJobs[0].ID
-             $AllIDs = @( $TestJobs | Select -ExpandProperty Id )
+             $AllIDs = @( $TestJobs | Select-Object -ExpandProperty Id )
              Remove-RSJob @Verbose -Id $ThisJobId
-             $RemainingIDs = @( Get-RSJob @Verbose -Id $AllIDs | Select -ExpandProperty Id )
+             $RemainingIDs = @( Get-RSJob @Verbose -Id $AllIDs | Select-Object -ExpandProperty Id )
              #We only removed one
              $RemainingIDs.count -eq ($AllIDs.count - 1) | Should Be $True
              #We removed the right ID
@@ -179,9 +179,9 @@ Describe "Remove-RSJob PS$PSVersion" {
              $TestJobs = @( 1..5 | Start-RSJob @Verbose -ScriptBlock { "" } )
              Start-Sleep -Seconds 2
              $ThisJobName = $TestJobs[0].Name
-             $AllNames = @( $TestJobs | Select -ExpandProperty Name )
+             $AllNames = @( $TestJobs | Select-Object -ExpandProperty Name )
              Remove-RSJob @Verbose -Name $ThisJobName
-             $RemainingNames = @( Get-RSJob @Verbose -Name $AllNames | Select -ExpandProperty Name )
+             $RemainingNames = @( Get-RSJob @Verbose -Name $AllNames | Select-Object -ExpandProperty Name )
              #We only removed one
              $RemainingNames.count -eq ($AllNames.count - 1) | Should Be $True
              #We removed the right ID
@@ -192,7 +192,7 @@ Describe "Remove-RSJob PS$PSVersion" {
              Start-Sleep -Seconds 2
              $ThisJob = $TestJobs[0]
              $ThisJob | Remove-RSJob @Verbose
-             $RemainingNames = @( $TestJobs | Get-RSJob @Verbose | Select -ExpandProperty Name)
+             $RemainingNames = @( $TestJobs | Get-RSJob @Verbose | Select-Object -ExpandProperty Name)
              #We only removed one
              $RemainingNames.count -eq ($TestJobs.count - 1) | Should Be $True
              #We removed the right ID

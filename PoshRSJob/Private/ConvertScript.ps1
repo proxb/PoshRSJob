@@ -13,7 +13,7 @@
             [void]$list.Add($Ast.SubExpression)
         }
         $UsingVariableData = @(GetUsingVariableValues $UsingVariables)
-        [void]$Params.AddRange(@($UsingVariableData.NewName | Select -Unique))
+        [void]$Params.AddRange(@($UsingVariableData.NewName | Select-Object -Unique))
     } 
     $NewParams = $Params -join ', '
     $Tuple=[Tuple]::Create($list,$NewParams)
