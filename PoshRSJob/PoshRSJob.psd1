@@ -1,7 +1,7 @@
 ﻿
 #
 # PoshRSJob
-# Version 1.7.3.6
+# Version 1.7.3.7
 #
 # Boe Prox (c) 2014
 # http://learn-powershell.net
