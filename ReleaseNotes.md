@@ -1,4 +1,10 @@
 ---------
+|1.7.3.7|
+---------
+* #127 (Module loading failure with high throttle counts (and possibly related skipped jobs))
+* #107 (Write-Stream throws lots of spurious errors on missing variables )
+
+---------
 |1.7.3.6|
 ---------
 * (FunctionsToLoad doesn't work if a script is called within a script)
