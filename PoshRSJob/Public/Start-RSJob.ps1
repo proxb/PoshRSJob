@@ -231,7 +231,7 @@ Function Start-RSJob {
             }           
         }
         If ($PSBoundParameters.ContainsKey('ArgumentList')) {
-            If (@($ArgumentList).count -match '0|1') {
+            If (@($ArgumentList).count -eq 1) {
                 $SingleArgument = $True
             } 
             Else {
@@ -262,7 +262,7 @@ Function Start-RSJob {
             }
         }
         Else {
-            $IsPipeline = $True
+            $IsPipeline = $False
             $IgnoreProcess = $False
         }
     }
@@ -275,13 +275,13 @@ Function Start-RSJob {
             $IsPipeline = $True
         }
         Else {
-            $IsPipeline = $True
+            $IsPipeline = $False
         }
     }
     End { 
         Write-Debug "[END]"        
         $SBParamCount = @(GetParamVariable -ScriptBlock $ScriptBlock).Count
-        $ArgumentCount = If (!$ArgumentList -or $SingleArgument) { # Empty array, or, 0 count
+        $ArgumentCount = If (!$ArgumentList) { # Empty array, or, 0 count
             0
         } 
         Else {
@@ -511,13 +511,17 @@ Function Start-RSJob {
             If ($PSBoundParameters.ContainsKey('ArgumentList')) {
                 If ($SingleArgument) {
                     ,$ArgumentList | ForEach-Object {
-                        Write-Verbose "Adding Argument: $($_) <$($_.GetType().Fullname)>"
+                        if ($_ -ne $null) {
+                            Write-Verbose "Adding Argument: $($_) <$($_.GetType().Fullname)>"
+                        }
                         [void]$PowerShell.AddArgument($_) 
                     }
                 } 
                 Else {
                     ForEach ($Argument in $ArgumentList) {
-                        Write-Verbose "Adding Argument: $($Argument) <$($Argument.GetType().Fullname)>"
+                        if ($_ -ne $null) {
+                            Write-Verbose "Adding Argument: $($Argument) <$($Argument.GetType().Fullname)>"
+                        }
                         [void]$PowerShell.AddArgument($Argument)    
                     }
                 }
