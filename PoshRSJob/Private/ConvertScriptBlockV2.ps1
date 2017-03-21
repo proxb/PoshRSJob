@@ -76,6 +76,9 @@
                     [void]$StringBuilder.Append($Tokens[$i].Content)
                 }                
             }
+            'Type' {
+                [void]$StringBuilder.Append('[{0}]' -f $Tokens[$i].Content)
+            }
             Default {
                 [void]$StringBuilder.Append($Tokens[$i].Content)         
             }
