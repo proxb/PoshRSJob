@@ -242,7 +242,13 @@ $PoshRS_RunspacePoolCleanup.Handle = $PoshRS_RunspacePoolCleanup.PowerShell.Begi
 Try {
     Get-ChildItem "$ScriptPath\Public" -Filter *.ps1 | Select-Object -ExpandProperty FullName | ForEach-Object {
         $Function = Split-Path $_ -Leaf
-        . $_
+	    if ($Host.Name -eq "Windows PowerShell ISE Host") {
+            # Allows debugging
+            . $_
+        } else {
+            # Faster but no debugging
+            Invoke-Expression ([System.IO.File]::ReadAllLines($_))
+        }
     }
 } Catch {
     Write-Warning ("{0}: {1}" -f $Function,$_.Exception.Message)
@@ -254,7 +260,13 @@ Try {
 Try {
     Get-ChildItem "$ScriptPath\Private" -Filter *.ps1 | Select-Object -ExpandProperty FullName | ForEach-Object {
         $Function = Split-Path $_ -Leaf
-        . $_
+	    if ($Host.Name -eq "Windows PowerShell ISE Host") {
+            # Allows debugging
+            . $_
+        } else {
+            # Faster but no debugging
+            Invoke-Expression ([System.IO.File]::ReadAllLines($_))
+        }
     }
 } Catch {
     Write-Warning ("{0}: {1}" -f $Function,$_.Exception.Message)
