@@ -7,3 +7,8 @@
 **What is the expected behavior?**
 
 **Which versions of Powershell and which OS are affected by this issue? Did this work in previous versions of our scripts?**
+
+**Please provide a code example showing the issue, if applicable:**
+```PowerShell
+#Code goes here
+```

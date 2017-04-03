@@ -1,7 +1,6 @@
 $ScriptPath = Split-Path $MyInvocation.MyCommand.Path
 $PSModule = $ExecutionContext.SessionState.Module 
 $PSModuleRoot = $PSModule.ModuleBase
-##TODO Added IsReceived properties and SetIsReceived function; not complete and needs tested //BCP 12/28/2016
 If ($PSVersionTable['PSEdition'] -and $PSVersionTable.PSEdition -eq 'Core') {
 #PowerShell V4 and below will throw a parser error even if I never use the classes keyword
 @'
