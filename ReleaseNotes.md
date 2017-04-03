@@ -1,4 +1,11 @@
 ---------
+|1.7.3.8|
+---------
+* #133 (Passing synchronized hashtable as argument does not work)
+* #132 (Not handling single parameter in ArgumentList correctly)
+* #136 (RSJob on PSv2) - Some parts may be fixed with how reflection is used
+
+---------
 |1.7.3.7|
 ---------
 * #127 (Module loading failure with high throttle counts (and possibly related skipped jobs))

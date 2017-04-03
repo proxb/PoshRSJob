@@ -10,7 +10,7 @@
             $Worker = $_Worker.GetValue($This.innerjob)
 
             $_CRP = $worker.GetType().GetProperty('CurrentlyRunningPipeline',$Flags)
-            $CRP = $_CRP.GetValue($Worker)
+            $CRP = $_CRP.GetValue($Worker, $Null)
             $State = If (-NOT $This.handle.IsCompleted -AND -NOT [bool]$CRP) {
                 [System.Management.Automation.PSInvocationState]::NotStarted
             }
@@ -62,7 +62,7 @@
             $Worker = $_Worker.GetValue($This.innerjob)
 
             $_CRP = $worker.GetType().GetProperty('CurrentlyRunningPipeline',$Flags)
-            $CRP = $_CRP.GetValue($Worker)
+            $CRP = $_CRP.GetValue($Worker, $Null)
             If (-NOT $This.handle.IsCompleted -AND -NOT [bool]$CRP) {
                 [System.Management.Automation.PSInvocationState]::NotStarted
             }

@@ -231,7 +231,8 @@ Function Start-RSJob {
             }           
         }
         If ($PSBoundParameters.ContainsKey('ArgumentList')) {
-            If (@($ArgumentList).count -match '0|1') {
+            Write-Debug "$(@($ArgumentList).count) argument/s passed via -ArgumentList"
+            If (@($ArgumentList).count -le 1) {
                 $SingleArgument = $True
             } 
             Else {
@@ -248,7 +249,7 @@ Function Start-RSJob {
             $IsPipeline = $True
             $IgnoreProcess = $True
         } 
-        ElseIf ($PSCmdlet.SessionState.PSVariable.Get('_')) {
+        ElseIf ($PSCmdlet.SessionState.PSVariable.Get('_') -AND $PSVersionTable.PSVersion.Major -ne2) {
             Write-Debug '$_ found from ForEach loop'
             $IsPipeline = $True
             $IgnoreProcess = $False
@@ -281,11 +282,11 @@ Function Start-RSJob {
     End { 
         Write-Debug "[END]"        
         $SBParamCount = @(GetParamVariable -ScriptBlock $ScriptBlock).Count
-        $ArgumentCount = If (!$ArgumentList -or $SingleArgument) { # Empty array, or, 0 count
+        $ArgumentCount = If (-NOT $ArgumentList -or ($SingleArgument -eq 0)) { # Empty array, or, 0 count
             0
         } 
         Else {
-            $ArgumentList.count
+            @($ArgumentList).count
         }
         If ($PSBoundParameters.ContainsKey('InputObject')) {
             If ($ArgumentCount -gt 0) {
