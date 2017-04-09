@@ -127,6 +127,7 @@ $PoshRS_jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
         Foreach($job in $PoshRS_Jobs) {            
             If ($job.Handle.isCompleted -AND (-NOT $Job.Completed)) {   
                 #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) completed")  
+                $Data = $null
                 Try {           
                     $Data = $job.InnerJob.EndInvoke($job.Handle)
                 } Catch {
@@ -153,13 +154,13 @@ $PoshRS_jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
                 }
                 #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Disposing job")
                 $job.InnerJob.dispose() 
-                $job.Completed = $True  
                 #Return type from Invoke() is a generic collection; need to verify the first index is not NULL
                 If (($Data.Count -gt 0) -AND (-NOT ($Data.Count -eq 1 -AND $Null -eq $Data[0]))) {   
                     $job.output = $Data
                     $job.HasMoreData = $True                           
                 }              
                 $Error.Clear()
+                $job.Completed = $True
             } 
         }        
         [System.Threading.Monitor]::Exit($PoshRS_Jobs.syncroot)
@@ -192,12 +193,16 @@ $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
     #Routine to handle completed runspaces
     Do { 
         #$ParentHost.ui.WriteVerboseLine("Beginning Do Statement")
+        If ($DisposePoshRS_RunspacePools) {
+            #Perform garbage collection
+            [gc]::Collect()
+        }
         $DisposePoshRS_RunspacePools=$False  
         If ($PoshRS_RunspacePools.Count -gt 0) { 
             #$ParentHost.ui.WriteVerboseLine("$($PoshRS_RunspacePools | Out-String)")           
             [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
             Foreach($RunspacePool in $PoshRS_RunspacePools) {                
-                #$ParentHost.ui.WriteVerboseLine("RunspacePool <$($RunspacePool.RunspaceID)> | MaxJobs: $($RunspacePool.MaxJobs) | AvailJobs: $($RunspacePool.AvailableJobs)")
+                #$ParentHost.ui.WriteVerboseLine("RunspacePool <$($RunspacePool.RunspacePoolID)> | MaxJobs: $($RunspacePool.MaxJobs) | AvailJobs: $($RunspacePool.AvailableJobs)")
                 If (($RunspacePool.AvailableJobs -eq $RunspacePool.MaxJobs) -AND $PoshRS_RunspacePools.LastActivity.Ticks -ne 0) {
                     If ((Get-Date).Ticks - $RunspacePool.LastActivity.Ticks -gt $PoshRS_RunspacePoolCleanup.Timeout) {
                         #Dispose of runspace pool
@@ -205,11 +210,6 @@ $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
                         $RunspacePool.RunspacePool.Dispose()
                         $RunspacePool.CanDispose = $True
                         $DisposePoshRS_RunspacePools=$True
-
-                        #Perform garbage collection
-                        [gc]::Collect()
-                        Start-Sleep -Seconds 5
-                        [gc]::Collect()
                     }
                 } Else {
                     $RunspacePool.LastActivity = (Get-Date)
@@ -221,15 +221,19 @@ $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
                 $TempCollection | Where-Object {
                     $_.CanDispose
                 } | ForEach-Object {
-                    #$ParentHost.ui.WriteVerboseLine("Removing runspacepool <$($_.RunspaceID)>")
+                    #$ParentHost.ui.WriteVerboseLine("Removing runspacepool <$($_.RunspacePoolID)>")
                     [void]$PoshRS_RunspacePools.Remove($_)
                 }
+                #Not setting this to silentlycontinue seems to cause another runspace to be created if an error occurs
+                Remove-Variable TempCollection -ErrorAction SilentlyContinue
             }
-            #Not setting this to silentlycontinue seems to cause another runspace to be created if an error occurs
-            Remove-Variable TempCollection -ErrorAction SilentlyContinue
             [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
         }
             #$ParentHost.ui.WriteVerboseLine("Sleeping")
+        If ($DisposePoshRS_RunspacePools) {
+            #Perform garbage collection
+            [gc]::Collect()
+        }
         Start-Sleep -Milliseconds 5000     
     } while ($PoshRS_RunspacePoolCleanup.Flag)
 })
