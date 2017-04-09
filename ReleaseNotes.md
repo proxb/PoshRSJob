@@ -1,4 +1,12 @@
 ---------
+|1.7.3.9|
+---------
+* #42 (V2 Pester test hangs in AppVeyor)
+* #121 (Missing output from Start-RSJob *bug*)
+* #122 (Output stream is not always cleared when using pooled runspaces)
+* #136 (RSJob on PSv2)
+
+---------
 |1.7.3.8|
 ---------
 * #133 (Passing synchronized hashtable as argument does not work)
