@@ -1,4 +1,9 @@
 ---------
+|1.7.3.10|
+---------
+* #139 (Wait-RSJob is not working with parameter set Name or ID.)
+
+---------
 |1.7.3.9|
 ---------
 * #42 (V2 Pester test hangs in AppVeyor)
