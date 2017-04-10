@@ -154,7 +154,7 @@ Function Wait-RSJob {
         If ($ScriptBlock) {
             Write-Verbose "WhereString: $($WhereString)" 
             Write-Verbose "Using scriptblock"
-            $FilteredJobs = @($list | Where-Object $ScriptBlock)
+            $FilteredJobs = @($PoshRS_Jobs | Where-Object $ScriptBlock)
             $WaitJobs = $FilteredJobs
             $TotalJobs = $FilteredJobs.Count
             Write-Verbose "$($FilteredJobs.Count)"
