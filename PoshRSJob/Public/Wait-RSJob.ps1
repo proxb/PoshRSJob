@@ -126,7 +126,7 @@ Function Wait-RSJob {
     Process {
         Write-Debug "ParameterSet: $($PSCmdlet.ParameterSetName)"
         if ($IsPipeline) {
-	        $Property = $PSCmdlet.ParameterSetName
+            $Property = $PSCmdlet.ParameterSetName
             if ($PSCmdlet.ParameterSetName -eq 'Job') {
                 [void]$WaitJobs.AddRange($Job)
             }
@@ -146,21 +146,21 @@ Function Wait-RSJob {
         if ($PSBoundParameters.ContainsKey('HasMoreData')) {
             [void]$WhereList.Add("`$_.HasMoreData -eq `$$HasMoreData")
         }
-		# IF faster than any scriptblocks
+        # IF faster than any scriptblocks
         if ($PSCmdlet.ParameterSetName -ne 'Job') {
-			if ($PSCmdlet.ParameterSetName -eq 'All') {
-				$WaitJobs = $PoshRS_Jobs
-			}
-			else {
-	            foreach ($job in $PoshRS_Jobs) {
-    	            if ($Hash.ContainsKey($job.$Property)) {
-        	            [void]$WaitJobs.Add($job)
-            	    }
-	            }
+            if ($PSCmdlet.ParameterSetName -eq 'All') {
+                $WaitJobs = $PoshRS_Jobs
+            }
+            else {
+                foreach ($job in $PoshRS_Jobs) {
+                    if ($Hash.ContainsKey($job.$Property)) {
+                        [void]$WaitJobs.Add($job)
+                    }
+                }
             }
         }
         if ($WaitJobs.Count -and $PSBoundParameters.ContainsKey('State')) {
-			$States = '^' + $State -join '$|^' + '$'
+            $States = '^' + $State -join '$|^' + '$'
             $WaitJobs = foreach ($job in $WaitJobs) {
                 if ($job.State -match $States) {
                     $job
