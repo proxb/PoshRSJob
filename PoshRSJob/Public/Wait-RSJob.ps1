@@ -141,7 +141,10 @@ Function Wait-RSJob {
         # IF faster than any scriptblocks
         if ($PSCmdlet.ParameterSetName -ne 'Job') {
             if ($PSCmdlet.ParameterSetName -eq 'All') {
-                $WaitJobs = $PoshRS_Jobs
+                if ($PSBoundParameters.ContainsKey('State') -or
+                    $PSBoundParameters.ContainsKey('HasMoreData')) {
+                    $WaitJobs = $PoshRS_Jobs
+                }
             }
             else {
                 foreach ($job in $PoshRS_Jobs) {
