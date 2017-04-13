@@ -32,8 +32,8 @@ Function Wait-RSJob {
             Waits for jobs that have data being outputted. You can specify -HasMoreData:$False to wait for jobs
             that have no data to output.
 
-		.PARAMETER Timeout
-			Timeout after specified number of seconds. This is a global timeout meaning that it is not a per
+        .PARAMETER Timeout
+            Timeout after specified number of seconds. This is a global timeout meaning that it is not a per
             job timeout.
 
         .PARAMETER ShowProgress
@@ -42,7 +42,7 @@ Function Wait-RSJob {
         .NOTES
             Name: Wait-RSJob
             Author: Ryan Bushe/Boe Prox
-	    Notes: This function is a slightly modified version of Get-RSJob by Boe Prox.(~10 lines of code changed)
+        Notes: This function is a slightly modified version of Get-RSJob by Boe Prox.(~10 lines of code changed)
 
         .EXAMPLE
             Get-RSJob | Wait-RSJob
@@ -63,134 +63,148 @@ Function Wait-RSJob {
         ParameterSetName='Id')]
         [int[]]$Id,
         [parameter(ValueFromPipelineByPropertyName=$True,
-        ParameterSetName='Guid')]
-        [guid[]]$InstanceID,
+        ParameterSetName='InstanceID')]
+        [string[]]$InstanceID,
         [parameter(ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Batch')]
         [string[]]$Batch,
         [parameter(ParameterSetName='Batch')]
         [parameter(ParameterSetName='Name')]
         [parameter(ParameterSetName='Id')]
-        [parameter(ParameterSetName='Guid')]
+        [parameter(ParameterSetName='InstanceID')]
         [parameter(ParameterSetName='All')]
         [ValidateSet('NotStarted','Running','Completed','Failed','Stopping','Stopped','Disconnected')]
         [string[]]$State,
         [parameter(ParameterSetName='Batch')]
         [parameter(ParameterSetName='Name')]
         [parameter(ParameterSetName='Id')]
-        [parameter(ParameterSetName='Guid')]
+        [parameter(ParameterSetName='InstanceID')]
         [parameter(ParameterSetName='All')]
         [Switch]$HasMoreData,
-		[int]$Timeout,
+        [int]$Timeout,
         [switch]$ShowProgress
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
         }        
-        Write-Verbose "ParameterSet: $($PSCmdlet.parametersetname)"
-        $List = New-Object System.Collections.ArrayList
-        $WhereList = New-Object System.Collections.ArrayList
-        
+        Write-Verbose "ParameterSet: $($PSCmdlet.ParameterSetName)"
+        $WaitJobs = New-Object System.Collections.ArrayList
+        $Hash = @{}
+        $Property = $PSCmdlet.ParameterSetName
+        $IsPipeline = $true
         #Take care of bound parameters
         If ($PSBoundParameters['Name']) {
-            [void]$list.AddRange($Name)
+            $IsPipeline = $false
+            foreach ($v in $Name) {
+                $Hash.Add($v,1)
+            }
         }
         If ($PSBoundParameters['Batch']) {
-            [void]$list.AddRange($Batch)
+            $IsPipeline = $false
+            foreach ($v in $Batch) {
+                $Hash.Add($v,1)
+            }
         }
         If ($PSBoundParameters['Id']) {
-            [void]$list.AddRange($Id)
+            $IsPipeline = $false
+            foreach ($v in $Id) {
+                $Hash.Add($v,1)
+            }
         }
         If ($PSBoundParameters['InstanceId']) {
-            [void]$list.AddRange($InstanceId)
+            $IsPipeline = $false
+            foreach ($v in $InstanceId) {
+                $Hash.Add($v,1)
+            }
         }
-		If ($PSBoundParameters['Job']){
-			[void]$list.AddRange($Job)
-		}		
+        If ($PSBoundParameters['Job']){
+            $IsPipeline = $false
+            [void]$WaitJobs.AddRange($Job)
+        }
     }
     Process {
-        If ($PSCmdlet.ParameterSetName -ne 'All') {
-            Write-Verbose "Adding $($_)"
-            [void]$List.Add($_)
+        Write-Debug "ParameterSet: $($PSCmdlet.ParameterSetName)"
+        if ($IsPipeline) {
+	        $Property = $PSCmdlet.ParameterSetName
+            if ($PSCmdlet.ParameterSetName -eq 'Job') {
+                [void]$WaitJobs.AddRange($Job)
+            }
+            elseif ($PSCmdlet.ParameterSetName -ne 'All') {
+                Write-Verbose "Adding $($PSBoundParameters[$Property])"
+                foreach ($v in $PSBoundParameters[$Property]) {
+                    $Hash.Add($v,1)
+                }
+            }
         }
     }
-    End {     
-        If ($List.count -eq 0) {
-            return
-        }   
-        Switch ($PSCmdlet.parametersetname) {
-            'Name' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
-                [void]$WhereList.Add("`$_.Name -match $Items")                    
-            }
-            'Id' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$WhereList.Add("`$_.Id -match $Items")                
-            }
-            'Guid' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$WhereList.Add("`$_.InstanceId -match $Items")  
-            }
-            'Job' {
-                $Items = '"{0}"' -f (($list | Select-Object -ExpandProperty Id | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$WhereList.Add("`$_.id -match $Items")
-            }	
-            'Batch' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$WhereList.Add("`$_.batch -match $Items")
-            }            		
-        }
-        If ($PSBoundParameters['State']) {
+    End {
+        $WhereList = New-Object System.Collections.ArrayList
+        if ($PSBoundParameters['State']) {
             [void]$WhereList.Add("`$_.State -match `"$($State -join '|')`"")
         }
-        If ($PSBoundParameters.ContainsKey('HasMoreData')) {
+        if ($PSBoundParameters.ContainsKey('HasMoreData')) {
             [void]$WhereList.Add("`$_.HasMoreData -eq `$$HasMoreData")
         }
-        If ($WhereList.count -gt 0) {
-            $WhereString = $WhereList -join ' -AND '
-            $ScriptBlock = [scriptblock]::Create($WhereString)
-        }               
-        If ($ScriptBlock) {
-            Write-Verbose "WhereString: $($WhereString)" 
-            Write-Verbose "Using scriptblock"
-            $FilteredJobs = @($PoshRS_Jobs | Where-Object $ScriptBlock)
-            $WaitJobs = $FilteredJobs
-            $TotalJobs = $FilteredJobs.Count
-            Write-Verbose "$($FilteredJobs.Count)"
-            $Date = Get-Date
-            $Completed = 0
-            Do{               
-                #only ever check $WaitJobs State once per loop, and do all operations based on that snapshot to avoid bugs where the state of a job may have changed mid loop
-                $JustFinishedJobs = New-Object System.Collections.ArrayList
-                $RunningJobs = New-Object System.Collections.ArrayList
-                ForEach ($WaitJob in $WaitJobs) {
-                    If($WaitJob.State -match 'Completed|Failed|Stopped|Suspended|Disconnected' -and $WaitJob.Completed) {
-                        [void]$JustFinishedJobs.Add($WaitJob)
-                    } Else {
-                        [void]$RunningJobs.Add($WaitJob)
-                    }
+		# IF faster than any scriptblocks
+        if ($PSCmdlet.ParameterSetName -ne 'Job') {
+			if ($PSCmdlet.ParameterSetName -eq 'All') {
+				$WaitJobs = $PoshRS_Jobs
+			}
+			else {
+	            foreach ($job in $PoshRS_Jobs) {
+    	            if ($Hash.ContainsKey($job.$Property)) {
+        	            [void]$WaitJobs.Add($job)
+            	    }
+	            }
+            }
+        }
+        if ($WaitJobs.Count -and $PSBoundParameters.ContainsKey('State')) {
+			$States = '^' + $State -join '$|^' + '$'
+            $WaitJobs = foreach ($job in $WaitJobs) {
+                if ($job.State -match $States) {
+                    $job
                 }
-                $WaitJobs = $RunningJobs
-
-                $JustFinishedJobs
-
-                $Completed += $JustFinishedJobs.Count
-                Write-Verbose "Wait: $($Waitjobs.Count)"
-                Write-Verbose "Completed: ($Completed)"
-                Write-Verbose "Total: ($Totaljobs)"
-                Write-Verbose "Status: $($Completed/$TotalJobs)"
-                If ($PSBoundParameters.ContainsKey('ShowProgress')) {
-                    Write-Progress -Activity "RSJobs Tracker" -Status ("Remaining Jobs: {0}" -f $Waitjobs.Count) -PercentComplete (($Completed/$TotalJobs)*100)
+            }
+        }
+        if ($WaitJobs.Count -and $PSBoundParameters.ContainsKey('HasMoreData')) {
+            $WaitJobs = foreach ($job in $WaitJobs) {
+                if ($job.HasMoreData -eq $HasMoreData) {
+                    $job
                 }
-                if($Timeout){
-                    if((New-Timespan $Date).TotalSeconds -ge $Timeout){
-                        $TimedOut = $True
-                        break
-                    }
-                }		
-            } 
-            While($Waitjobs.Count -ne 0)
+            }
+        }
+        $TotalJobs = $WaitJobs.Count
+        $Completed = 0
+        Write-Verbose "Wait for $($TotalJobs) jobs"
+        $Date = Get-Date
+        while ($Waitjobs.Count -ne 0) {
+            Start-Sleep -Milliseconds 100
+            #only ever check $WaitJobs State once per loop, and do all operations based on that snapshot to avoid bugs where the state of a job may have changed mid loop
+            $JustFinishedJobs = New-Object System.Collections.ArrayList
+            $RunningJobs = New-Object System.Collections.ArrayList
+            ForEach ($WaitJob in $WaitJobs) {
+                If($WaitJob.State -match 'Completed|Failed|Stopped|Suspended|Disconnected' -and $WaitJob.Completed) {
+                    [void]$JustFinishedJobs.Add($WaitJob)
+                } Else {
+                    [void]$RunningJobs.Add($WaitJob)
+                }
+            }
+            $WaitJobs = $RunningJobs
+
+            $JustFinishedJobs
+
+            $Completed += $JustFinishedJobs.Count
+            Write-Debug "Wait: $($Waitjobs.Count)"
+            Write-Debug "Completed: ($Completed)"
+            Write-Debug "Total: ($Totaljobs)"
+            Write-Debug "Status: $($Completed/$TotalJobs)"
+            If ($PSBoundParameters.ContainsKey('ShowProgress')) {
+                Write-Progress -Activity "RSJobs Tracker" -Status ("Remaining Jobs: {0}" -f $Waitjobs.Count) -PercentComplete (($Completed/$TotalJobs)*100)
+            }
+            if($Timeout -and (New-Timespan $Date).TotalSeconds -ge $Timeout){
+                break
+            }
         }
     }
 }

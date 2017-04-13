@@ -237,23 +237,59 @@ Describe "Wait-RSJob PS$PSVersion" {
             $EndDate = Get-Date           
             ( $EndDate - $StartDate ).TotalSeconds -gt 5 | Should be $True
         }
+        It 'should wait for jobs by Name' {
+            $TestJob = 1..3 | Foreach {
+                Start-RSJob -Name "NameTest1$_" @Verbose -ScriptBlock {
+                Start-Sleep -seconds 5
+                Get-Date
+            } }
+            [array]$Result = Wait-RSJob -Name ($TestJob | Select -Expand Name) # Omitted verbose to avoid clutter
+            $Result.Count -eq $TestJob.Count | Should be $True
+        }
+        It 'should wait for jobs by Name from pipeline' {
+            $TestJob = 1..3 | Foreach {
+                Start-RSJob -Name "NameTest2$_" @Verbose -ScriptBlock {
+                Start-Sleep -seconds 5
+                Get-Date
+            } }
+            [array]$Result = $TestJob | Select Name | Wait-RSJob # Omitted verbose to avoid clutter
+            $Result.Count -eq $TestJob.Count | Should be $True
+        }
+        It 'should wait for jobs by id' {
+            $TestJob = 1..3 | Foreach {
+                Start-RSJob @Verbose -ScriptBlock {
+                Start-Sleep -seconds 5
+                Get-Date
+            } }
+            [array]$Result = Wait-RSJob -Id ($TestJob | Select -Expand Id) # Omitted verbose to avoid clutter
+            $Result.Count -eq $TestJob.Count | Should be $True
+        }
+        It 'should wait for jobs by InstanceId' {
+            $TestJob = 1..3 | Foreach {
+                Start-RSJob @Verbose -ScriptBlock {
+                Start-Sleep -seconds 5
+                Get-Date
+            } }
+            [array]$Result = Wait-RSJob -InstanceId ($TestJob | Select -Expand InstanceId) # Omitted verbose to avoid clutter
+            $Result.Count -eq $TestJob.Count | Should be $True
+        }
     }
 }
 
 
 Describe "Test RSJob Throttling" {
-	It "Full Pipe input" {
-		$StartDate = Get-Date
-		Test-RSJob $true
-        	$EndDate = Get-Date           
-		( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
-	}
-	It "OneByOne Pipe input" {
-		$StartDate = Get-Date
-		Test-RSJob $false
-        	$EndDate = Get-Date           
-        	( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
-	}
+    It "Full Pipe input" {
+        $StartDate = Get-Date
+        Test-RSJob $true
+            $EndDate = Get-Date           
+        ( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
+    }
+    It "OneByOne Pipe input" {
+        $StartDate = Get-Date
+        Test-RSJob $false
+            $EndDate = Get-Date           
+            ( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
+    }
 }
 
 
@@ -262,11 +298,11 @@ Describe "Module OnRemove Actions PS$PSVersion" {
         Get-RSJob | Remove-RSJob
         Remove-Module -Name PoshRSJob -ErrorAction SilentlyContinue
         It 'should remove all variables' {
-            {Get-Variable Jobs -ErrorAction Stop} | Should Throw
-            {Get-Variable JobCleanup -ErrorAction Stop} | Should Throw
-            {Get-Variable JobID -ErrorAction Stop} | Should Throw
-            {Get-Variable RunspacePoolCleanup -ErrorAction Stop} | Should Throw
-            {Get-Variable RunspacePools -ErrorAction Stop} | Should Throw
+            {Get-Variable PoshRS_Jobs -ErrorAction Stop} | Should Throw
+            {Get-Variable PoshRS_JobCleanup -ErrorAction Stop} | Should Throw
+            {Get-Variable PoshRS_JobID -ErrorAction Stop} | Should Throw
+            {Get-Variable PoshRS_RunspacePoolCleanup -ErrorAction Stop} | Should Throw
+            {Get-Variable PoshRS_RunspacePools -ErrorAction Stop} | Should Throw
         }
     }
 }
