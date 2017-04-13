@@ -41,8 +41,7 @@ Function Wait-RSJob {
 
         .NOTES
             Name: Wait-RSJob
-            Author: Ryan Bushe/Boe Prox
-        Notes: This function is a slightly modified version of Get-RSJob by Boe Prox.(~10 lines of code changed)
+            Author: Ryan Bushe/Boe Prox/Max Kozlov
 
         .EXAMPLE
             Get-RSJob | Wait-RSJob
@@ -139,13 +138,6 @@ Function Wait-RSJob {
         }
     }
     End {
-        $WhereList = New-Object System.Collections.ArrayList
-        if ($PSBoundParameters['State']) {
-            [void]$WhereList.Add("`$_.State -match `"$($State -join '|')`"")
-        }
-        if ($PSBoundParameters.ContainsKey('HasMoreData')) {
-            [void]$WhereList.Add("`$_.HasMoreData -eq `$$HasMoreData")
-        }
         # IF faster than any scriptblocks
         if ($PSCmdlet.ParameterSetName -ne 'Job') {
             if ($PSCmdlet.ParameterSetName -eq 'All') {
@@ -161,14 +153,14 @@ Function Wait-RSJob {
         }
         if ($WaitJobs.Count -and $PSBoundParameters.ContainsKey('State')) {
             $States = '^' + $State -join '$|^' + '$'
-            $WaitJobs = foreach ($job in $WaitJobs) {
+            [array]$WaitJobs = foreach ($job in $WaitJobs) {
                 if ($job.State -match $States) {
                     $job
                 }
             }
         }
         if ($WaitJobs.Count -and $PSBoundParameters.ContainsKey('HasMoreData')) {
-            $WaitJobs = foreach ($job in $WaitJobs) {
+            [array]$WaitJobs = foreach ($job in $WaitJobs) {
                 if ($job.HasMoreData -eq $HasMoreData) {
                     $job
                 }
