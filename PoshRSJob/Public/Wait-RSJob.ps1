@@ -87,53 +87,19 @@ Function Wait-RSJob {
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
         }        
-        Write-Verbose "ParameterSet: $($PSCmdlet.ParameterSetName)"
         $WaitJobs = New-Object System.Collections.ArrayList
         $Hash = @{}
-        $Property = $PSCmdlet.ParameterSetName
-        $IsPipeline = $true
-        #Take care of bound parameters
-        If ($PSBoundParameters['Name']) {
-            $IsPipeline = $false
-            foreach ($v in $Name) {
-                $Hash.Add($v,1)
-            }
-        }
-        If ($PSBoundParameters['Batch']) {
-            $IsPipeline = $false
-            foreach ($v in $Batch) {
-                $Hash.Add($v,1)
-            }
-        }
-        If ($PSBoundParameters['Id']) {
-            $IsPipeline = $false
-            foreach ($v in $Id) {
-                $Hash.Add($v,1)
-            }
-        }
-        If ($PSBoundParameters['InstanceId']) {
-            $IsPipeline = $false
-            foreach ($v in $InstanceId) {
-                $Hash.Add($v,1)
-            }
-        }
-        If ($PSBoundParameters['Job']){
-            $IsPipeline = $false
-            [void]$WaitJobs.AddRange($Job)
-        }
     }
     Process {
         Write-Debug "ParameterSet: $($PSCmdlet.ParameterSetName)"
-        if ($IsPipeline) {
-            $Property = $PSCmdlet.ParameterSetName
-            if ($PSCmdlet.ParameterSetName -eq 'Job') {
-                [void]$WaitJobs.AddRange($Job)
-            }
-            elseif ($PSCmdlet.ParameterSetName -ne 'All') {
-                Write-Verbose "Adding $($PSBoundParameters[$Property])"
-                foreach ($v in $PSBoundParameters[$Property]) {
-                    $Hash.Add($v,1)
-                }
+        $Property = $PSCmdlet.ParameterSetName
+        if ($PSCmdlet.ParameterSetName -eq 'Job') {
+            [void]$WaitJobs.AddRange($Job)
+        }
+        elseif ($PSCmdlet.ParameterSetName -ne 'All') {
+            Write-Verbose "Adding $($PSBoundParameters[$Property])"
+            foreach ($v in $PSBoundParameters[$Property]) {
+                $Hash.Add($v,1)
             }
         }
     }
