@@ -103,6 +103,7 @@ Function Get-RSJob {
         }
         Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
         $Hash = @{}
+        $ResultJobs = New-Object System.Collections.ArrayList
     }
     Process {
         Write-Debug "ParameterSet: $($PSCmdlet.ParameterSetName)"
@@ -124,32 +125,29 @@ Function Get-RSJob {
     End {
         #Job objects searched by ID
         if ($Property -eq 'Job') { $Property = 'ID' }
+        $States = if ($PSBoundParameters.ContainsKey('State')) { '^' + ($State -join '$|^') + '$' } else { '.' }
+
         # IF faster than any scriptblocks
         if ($PSCmdlet.ParameterSetName -eq 'All') {
+            Write-Verbose 'All Jobs'
             $ResultJobs = $PoshRS_Jobs
         }
         else {
-            [array]$ResultJobs = foreach ($job in $PoshRS_Jobs) {
-                if ($Hash.ContainsKey($job.$Property)) {
-                    $job
+            Write-Verbose "Filtered Jobs by $Property"
+            foreach ($job in $PoshRS_Jobs) {
+                if ($Hash.ContainsKey($job.$Property))
+                {
+                    [void]$ResultJobs.Add($job)
                 }
             }
         }
-        if ($ResultJobs.Count -and $PSBoundParameters.ContainsKey('State')) {
-            $States = '^' + $State -join '$|^' + '$'
-            [array]$ResultJobs = foreach ($job in $ResultJobs) {
-                if ($job.State -match $States) {
-                    $job
-                }
+        foreach ($job in $ResultJobs) {
+            if (($job.State -match $States) -and
+                (-not $PSBoundParameters.ContainsKey('HasMoreData') -or $job.HasMoreData -eq $HasMoreData)
+               )
+            {
+                $job
             }
         }
-        if ($ResultJobs.Count -and $PSBoundParameters.ContainsKey('HasMoreData')) {
-            [array]$ResultJobs = foreach ($job in $ResultJobs) {
-                if ($job.HasMoreData -eq $HasMoreData) {
-                    $job
-                }
-            }
-        }
-        $ResultJobs
     }
 }
