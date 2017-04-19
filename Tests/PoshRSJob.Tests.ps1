@@ -59,7 +59,7 @@ Describe "PoshRSJob PS$($PSVersion)" {
             $Commands -contains "wsj"    | Should be $True
         }
         It 'should initialize necessary variables' {
-            $PSCmdlet.SessionState.PSVariable.Get('PoshRS_runspacepools').Name | Should Be 'PoshRS_RunspacePools'
+            $PSCmdlet.SessionState.PSVariable.Get('PoshRS_RunspacePools').Name | Should Be 'PoshRS_RunspacePools'
             $PSCmdlet.SessionState.PSVariable.Get('PoshRS_RunspacePoolCleanup').Name | Should Be 'PoshRS_RunspacePoolCleanup'
             $PSCmdlet.SessionState.PSVariable.Get('PoshRS_JobCleanup').Name | Should Be 'PoshRS_JobCleanup'
             $PSCmdlet.SessionState.PSVariable.Get('PoshRS_JobID').Name | Should Be 'PoshRS_JobID'
@@ -67,7 +67,7 @@ Describe "PoshRSJob PS$($PSVersion)" {
         }
     }
 }
- 
+
 Describe "Start-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
@@ -77,9 +77,9 @@ Describe "Start-RSJob PS$PSVersion" {
             $SecondJob = Start-RSJob {$Null}
             $NextID = $SecondJob.Id
             $NextID - $InitialID | Should Be 1
- 
+
         }
-        It 'should return initial job details' {           
+        It 'should return initial job details' {
             $Output1 = @( 1 | Start-RSJob @Verbose -ScriptBlock {
                 Param($Object)
                 $Object
@@ -90,7 +90,7 @@ Describe "Start-RSJob PS$PSVersion" {
             } )
             $Output1.Count | Should be 1
             $Output5.Count | Should be 5
-        }        
+        }
         It 'should support $using syntax' {
             $Test = "5"
             $Output1 = 1 | Start-RSJob @Verbose -ScriptBlock {
@@ -103,7 +103,7 @@ Describe "Start-RSJob PS$PSVersion" {
                 $_
             } ) | Wait-RSJob | Receive-RSJob
             $Output1 | Should Be 1
-        }             
+        }
     }
 }
 
@@ -120,23 +120,23 @@ Describe "Stop-RSJob PS$PSVersion" {
         }
     }
 }
- 
+
 Describe "Get-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
         It 'should return all job details' {
             $Output = @( Get-RSJob @Verbose )
             $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
-           
+
             $Output.count | Should be 11
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
             $Props -contains "HasMoreData" | Should be $True
-        }       
+        }
         It 'should return job details based on ID' {
             $Output = @( Get-RSJob @Verbose -Id 1 )
             $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
-           
+
             $Output.count | Should be 1
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
@@ -145,7 +145,7 @@ Describe "Get-RSJob PS$PSVersion" {
         It 'should return job details based on Name' {
             $Output = @( Get-RSJob @Verbose -Name Job2 )
             $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
-           
+
             $Output.count | Should be 1
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
@@ -153,14 +153,14 @@ Describe "Get-RSJob PS$PSVersion" {
         }
     }
 }
- 
+
 Describe "Remove-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
         It 'should remove jobs' {
             Get-RSJob @Verbose | Remove-RSJob @Verbose
             $Output = @( Get-RSJob @Verbose )
-           
+
             $Output.count | Should be 0
         }
         It 'should only remove specified jobs by ID' {
@@ -185,9 +185,9 @@ Describe "Remove-RSJob PS$PSVersion" {
              #We only removed one
              $RemainingNames.count -eq ($AllNames.count - 1) | Should Be $True
              #We removed the right ID
-             $RemainingNames -notcontains $ThisJobName | Should Be $True           
+             $RemainingNames -notcontains $ThisJobName | Should Be $True
         }
-        It 'should only remove specified jobs by InputObject' {            
+        It 'should only remove specified jobs by InputObject' {
              $TestJobs = @( 1..5 | Start-RSJob @Verbose -ScriptBlock { "" })
              Start-Sleep -Seconds 2
              $ThisJob = $TestJobs[0]
@@ -196,34 +196,34 @@ Describe "Remove-RSJob PS$PSVersion" {
              #We only removed one
              $RemainingNames.count -eq ($TestJobs.count - 1) | Should Be $True
              #We removed the right ID
-             $RemainingNames -notcontains $ThisJob.Name | Should Be $True             
+             $RemainingNames -notcontains $ThisJob.Name | Should Be $True
         }
     }
 }
- 
+
 Describe "Receive-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
         It 'should retrieve job data' {
             $TestJob = 0 | Start-RSJob @Verbose -ScriptBlock {"Working on $_"}
             Start-Sleep -Seconds 1
-           
+
             $Output = @( $TestJob | Receive-RSJob @Verbose )
             $Output.Count | Should be 1
             $Output[0] | Should be "Working on 0"
-           
+
         }
         It 'should not remove the job' {
             $TestJob = 0 | Start-RSJob @Verbose -ScriptBlock {""}
             Start-Sleep -Seconds 1
             $TestJob | Receive-RSJob @Verbose | Out-Null
-           
+
             $Output = @( $TestJob | Get-RSJob @Verbose )
             $Output.Count | Should be 1
         }
     }
 }
- 
+
 Describe "Wait-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
@@ -234,7 +234,7 @@ Describe "Wait-RSJob PS$PSVersion" {
                 Get-Date
             }
             $TestJob | Wait-RSJob # Omitted verbose to avoid clutter
-            $EndDate = Get-Date           
+            $EndDate = Get-Date
             ( $EndDate - $StartDate ).TotalSeconds -gt 5 | Should be $True
         }
         It 'should wait for jobs by Name' {
@@ -281,13 +281,13 @@ Describe "Test RSJob Throttling" {
     It "Full Pipe input" {
         $StartDate = Get-Date
         Test-RSJob $true
-            $EndDate = Get-Date           
+            $EndDate = Get-Date
         ( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
     }
     It "OneByOne Pipe input" {
         $StartDate = Get-Date
         Test-RSJob $false
-            $EndDate = Get-Date           
+            $EndDate = Get-Date
             ( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
     }
 }
