@@ -55,10 +55,10 @@ Function Receive-RSJob {
         ParameterSetName='Job', Position=0)]
         [Alias('InputObject')]
         [RSJob[]]$Job,
-        [parameter(ValueFromPipelineByPropertyName=$True,
+        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Name')]
         [string[]]$Name,
-        [parameter(ValueFromPipelineByPropertyName=$True,
+        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Id')]
         [int[]]$Id,
         [parameter(ValueFromPipelineByPropertyName=$True,

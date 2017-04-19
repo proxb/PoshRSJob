@@ -70,7 +70,7 @@ Function Get-RSJob {
         ParameterSetName='Job', Position=0)]
         [Alias('InputObject')]
         [RSJob[]]$Job,
-        [parameter(ValueFromPipelineByPropertyName=$True,
+        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Name')]
         [string[]]$Name,
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
