@@ -26,14 +26,90 @@ function Test-RSJob([bool]$FullPiping=$true) {
     $ScriptBlock = { "{0}: {1}" -f $_, [DateTime]::Now; Start-Sleep -Seconds 5 }
     $params = @{ Batch='throttletest'; ScriptBlock=$ScriptBlock; Throttle=5 }
     if ($FullPiping) {
-        $jobs = 1..25 | Start-RSJob @params
+        $jobs = 1..15 | Start-RSJob @params
     }
     else {
-        $jobs = 1..25 | Foreach-Object { $_ | Start-RSJob @params }
+        $jobs = 1..15 | Foreach-Object { $_ | Start-RSJob @params }
     }
     $jobs | Wait-RSJob | Receive-RSJob
     $jobs | Remove-RSJob
 }
+
+$ParameterTestCases = @(
+    @{
+       Case = 'by job object'
+       Mode = 0
+       Param = { @{ Job = $TestJob } }
+    },
+    @{
+       Case = 'by job object positioned'
+       Mode = 1
+       Param = { $TestJob }
+    },
+    @{
+       Case = 'by job object from pipeline (name)'
+       Mode = 2
+       Param = { '' | Select @{n='Job'; e={$TestJob}} }
+    },
+    @{
+       Case = 'by job object from pipeline (value)'
+       Mode = 2
+       Param = { $TestJob }
+    },
+
+    @{
+       Case = 'by id'
+       Mode = 0
+       Param = { @{ Id = ($TestJob | Select-Object -Expand id) } }
+    },
+    @{
+       Case = 'by id positioned'
+       Mode = 1
+       Param = { $TestJob | Select-Object -Expand id }
+    },
+    @{
+       Case = 'by id from pipeline (name)'
+       Mode = 2
+       Param = { $TestJob | Select-Object id }
+    },
+    @{
+       Case = 'by id from pipeline (value)'
+       Mode = 2
+       Param = { $TestJob | Select-Object -Expand id }
+    },
+
+    @{
+       Case = 'by name'
+       Mode = 0
+       Param = { @{ Name = ($TestJob | Select-Object -Expand Name) } }
+    },
+    @{
+       Case = 'by name positioned'
+       Mode = 1
+       Param = { $TestJob | Select-Object -Expand Name }
+    },
+    @{
+       Case = 'by name from pipeline (name)'
+       Mode = 2
+       Param = { $TestJob | Select-Object Name }
+    },
+    @{
+       Case = 'by name from pipeline (value)'
+       Mode = 2
+       Param = { $TestJob | Select-Object -Expand Name }
+    },
+
+    @{
+       Case = 'by InstanceID'
+       Mode = 0
+       Param = { @{ InstanceID = ($TestJob | Select-Object -Expand InstanceID) } }
+    },
+    @{
+       Case = 'by InstanceID from pipeline (name)'
+       Mode = 2
+       Param = { $TestJob | Select-Object InstanceID }
+    }
+)
 
 Describe "PoshRSJob PS$($PSVersion)" {
     Context 'Strict mode' {
@@ -107,9 +183,66 @@ Describe "Start-RSJob PS$PSVersion" {
     }
 }
 
+Describe "Get-RSJob PS$PSVersion" {
+    Context 'Strict mode' {
+        Set-StrictMode -Version latest
+        It 'should return all job details' {
+            $Output = @( Get-RSJob @Verbose )
+            $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
+
+            $Output.count | Should be 10
+            $Props -contains "Id" | Should be $True
+            $Props -contains "State" | Should be $True
+            $Props -contains "HasMoreData" | Should be $True
+        }
+
+        It 'should return job by state' {
+            1..10 | Start-RSJob { Start-Sleep -Seconds 5; $_ } -Throttle 5
+            $Jobs = @(Get-RSJob -State NotStarted)
+            $Jobs.Count | Should Be 5
+        }
+
+        It 'should return job details <Case>' -TestCases $ParameterTestCases {
+            param(
+                $Case,
+                $Mode,
+                $Param
+            )
+
+            $TestJob = Start-RSJob -Name "TestJob $Case" -ScriptBlock { $text=$using:Case; "Working on $text" }
+
+            switch ($Mode) {
+                0 {
+                    $Parameters = & $Param
+                    $Output = @( Get-RSJob @Verbose @Parameters )
+                }
+                1 {
+                    $Parameters = & $Param
+                    $Output = @( Get-RSJob @Verbose $Parameters )
+                }
+                2 {
+                    $Parameters = & $Param
+                    $Output = @( $Parameters | Get-RSJob @Verbose )
+                }
+                default {
+                    # Fail test on invalid mode
+                    'Invalid mode !' | Should be 'Invalid mode !!!'
+                }
+            }
+
+            $Output.Count | Should be 1
+			$Output[0] -is 'RSJob' | Should be $true
+			$Output[0].Name | Should be "TestJob $Case"
+        }
+    }
+}
+
 Describe "Stop-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
+        It 'should not stop a job' {
+            Stop-RSJob | Should BeNullOrEmpty
+        }
         It 'should stop a job' {
             $Job = 1 | Start-RSJob -ScriptBlock {
                 While ($True) {$Null}
@@ -118,108 +251,35 @@ Describe "Stop-RSJob PS$PSVersion" {
             Start-Sleep -Milliseconds 100
             $Job.State | Should be 'Stopped'
         }
-    }
-}
-
-Describe "Get-RSJob PS$PSVersion" {
-    Context 'Strict mode' {
-        Set-StrictMode -Version latest
-        It 'should return all job details' {
-            $Output = @( Get-RSJob @Verbose )
-            $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
-
-            $Output.count | Should be 11
-            $Props -contains "Id" | Should be $True
-            $Props -contains "State" | Should be $True
-            $Props -contains "HasMoreData" | Should be $True
-        }
-        It 'should return job details based on ID' {
-            $Output = @( Get-RSJob @Verbose -Id 1 )
-            $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
-
-            $Output.count | Should be 1
-            $Props -contains "Id" | Should be $True
-            $Props -contains "State" | Should be $True
-            $Props -contains "HasMoreData" | Should be $True
-        }
-        It 'should return job details based on Name' {
-            $Output = @( Get-RSJob @Verbose -Name Job2 )
-            $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
-
-            $Output.count | Should be 1
-            $Props -contains "Id" | Should be $True
-            $Props -contains "State" | Should be $True
-            $Props -contains "HasMoreData" | Should be $True
-        }
-    }
-}
-
-Describe "Remove-RSJob PS$PSVersion" {
-    Context 'Strict mode' {
-        Set-StrictMode -Version latest
-        It 'should remove jobs' {
-            Get-RSJob @Verbose | Remove-RSJob @Verbose
-            $Output = @( Get-RSJob @Verbose )
-
-            $Output.count | Should be 0
-        }
-        It 'should only remove specified jobs by ID' {
-             $TestJobs = @( 1..5 | Start-RSJob @Verbose -ScriptBlock { "" } )
-             Start-Sleep -Seconds 2
-             $ThisJobId = $TestJobs[0].ID
-             $AllIDs = @( $TestJobs | Select-Object -ExpandProperty Id )
-             Remove-RSJob @Verbose -Id $ThisJobId
-             $RemainingIDs = @( Get-RSJob @Verbose -Id $AllIDs | Select-Object -ExpandProperty Id )
-             #We only removed one
-             $RemainingIDs.count -eq ($AllIDs.count - 1) | Should Be $True
-             #We removed the right ID
-             $RemainingIDs -notcontains $ThisJobId | Should Be $True
-        }
-        It 'should only remove specified jobs by Name' {
-             $TestJobs = @( 1..5 | Start-RSJob @Verbose -ScriptBlock { "" } )
-             Start-Sleep -Seconds 2
-             $ThisJobName = $TestJobs[0].Name
-             $AllNames = @( $TestJobs | Select-Object -ExpandProperty Name )
-             Remove-RSJob @Verbose -Name $ThisJobName
-             $RemainingNames = @( Get-RSJob @Verbose -Name $AllNames | Select-Object -ExpandProperty Name )
-             #We only removed one
-             $RemainingNames.count -eq ($AllNames.count - 1) | Should Be $True
-             #We removed the right ID
-             $RemainingNames -notcontains $ThisJobName | Should Be $True
-        }
-        It 'should only remove specified jobs by InputObject' {
-             $TestJobs = @( 1..5 | Start-RSJob @Verbose -ScriptBlock { "" })
-             Start-Sleep -Seconds 2
-             $ThisJob = $TestJobs[0]
-             $ThisJob | Remove-RSJob @Verbose
-             $RemainingNames = @( $TestJobs | Get-RSJob @Verbose | Select-Object -ExpandProperty Name)
-             #We only removed one
-             $RemainingNames.count -eq ($TestJobs.count - 1) | Should Be $True
-             #We removed the right ID
-             $RemainingNames -notcontains $ThisJob.Name | Should Be $True
-        }
-    }
-}
-
-Describe "Receive-RSJob PS$PSVersion" {
-    Context 'Strict mode' {
-        Set-StrictMode -Version latest
-        It 'should retrieve job data' {
-            $TestJob = 0 | Start-RSJob @Verbose -ScriptBlock {"Working on $_"}
-            Start-Sleep -Seconds 1
-
-            $Output = @( $TestJob | Receive-RSJob @Verbose )
-            $Output.Count | Should be 1
-            $Output[0] | Should be "Working on 0"
-
-        }
-        It 'should not remove the job' {
-            $TestJob = 0 | Start-RSJob @Verbose -ScriptBlock {""}
-            Start-Sleep -Seconds 1
-            $TestJob | Receive-RSJob @Verbose | Out-Null
-
-            $Output = @( $TestJob | Get-RSJob @Verbose )
-            $Output.Count | Should be 1
+        It 'should stop a job <Case>' -TestCases $ParameterTestCases {
+            param(
+                $Case,
+                $Mode,
+                $Param
+            )
+            $TestJob = 1 | Start-RSJob -ScriptBlock {
+                While ($True) {$Null}
+            }
+            switch ($Mode) {
+                0 {
+                    $Parameters = & $Param
+                    Stop-RSJob @Parameters
+                }
+                1 {
+                    $Parameters = & $Param
+                    Stop-RSJob $Parameters
+                }
+                2 {
+                    $Parameters = & $Param
+                    $Parameters | Stop-RSJob
+                }
+                default {
+                    # Fail test on invalid mode
+                    'Invalid mode !' | Should be 'Invalid mode !!!'
+                }
+            }
+            Start-Sleep -Milliseconds 100
+            $TestJob.State | Should be 'Stopped'
         }
     }
 }
@@ -227,71 +287,171 @@ Describe "Receive-RSJob PS$PSVersion" {
 Describe "Wait-RSJob PS$PSVersion" {
     Context 'Strict mode' {
         Set-StrictMode -Version latest
-        It 'should wait for jobs' {
+
+        It 'should not wait a job' {
+            Wait-RSJob | Should BeNullOrEmpty
+        }
+
+        It 'should wait for jobs <Case>' -TestCases $ParameterTestCases {
+            param(
+                $Case,
+                $Mode,
+                $Param
+            )
             $StartDate = Get-Date
             $TestJob = 0 | Start-RSJob @Verbose -ScriptBlock {
-                Start-Sleep -seconds 5
+                Start-Sleep -seconds 3
                 Get-Date
             }
-            $TestJob | Wait-RSJob # Omitted verbose to avoid clutter
+            switch ($Mode) {
+                0 {
+                    $Parameters = & $Param
+                    Wait-RSJob @Parameters # Omitted verbose to avoid clutter
+                }
+                1 {
+                    $Parameters = & $Param
+                    Wait-RSJob $Parameters # Omitted verbose to avoid clutter
+                }
+                2 {
+                    $Parameters = & $Param
+                    $Parameters | Wait-RSJob # Omitted verbose to avoid clutter
+                }
+                default {
+                    # Fail test on invalid mode
+                    'Invalid mode !' | Should be 'Invalid mode !!!'
+                }
+            }
             $EndDate = Get-Date
-            ( $EndDate - $StartDate ).TotalSeconds -gt 5 | Should be $True
-        }
-        It 'should wait for jobs by Name' {
-            $TestJob = 1..3 | Foreach {
-                Start-RSJob -Name "NameTest1$_" @Verbose -ScriptBlock {
-                Start-Sleep -seconds 5
-                Get-Date
-            } }
-            [array]$Result = Wait-RSJob -Name ($TestJob | Select -Expand Name) # Omitted verbose to avoid clutter
-            $Result.Count -eq $TestJob.Count | Should be $True
-        }
-        It 'should wait for jobs by Name from pipeline' {
-            $TestJob = 1..3 | Foreach {
-                Start-RSJob -Name "NameTest2$_" @Verbose -ScriptBlock {
-                Start-Sleep -seconds 5
-                Get-Date
-            } }
-            [array]$Result = $TestJob | Select Name | Wait-RSJob # Omitted verbose to avoid clutter
-            $Result.Count -eq $TestJob.Count | Should be $True
-        }
-        It 'should wait for jobs by id' {
-            $TestJob = 1..3 | Foreach {
-                Start-RSJob @Verbose -ScriptBlock {
-                Start-Sleep -seconds 5
-                Get-Date
-            } }
-            [array]$Result = Wait-RSJob -Id ($TestJob | Select -Expand Id) # Omitted verbose to avoid clutter
-            $Result.Count -eq $TestJob.Count | Should be $True
-        }
-        It 'should wait for jobs by InstanceId' {
-            $TestJob = 1..3 | Foreach {
-                Start-RSJob @Verbose -ScriptBlock {
-                Start-Sleep -seconds 5
-                Get-Date
-            } }
-            [array]$Result = Wait-RSJob -InstanceId ($TestJob | Select -Expand InstanceId) # Omitted verbose to avoid clutter
-            $Result.Count -eq $TestJob.Count | Should be $True
+            ( $EndDate - $StartDate ).TotalSeconds -gt 3 | Should be $True
         }
     }
 }
 
+Describe "Receive-RSJob PS$PSVersion" {
+    Context 'Strict mode' {
+        Set-StrictMode -Version latest
+
+        It 'should not retrieve a job' {
+            Receive-RSJob | Should BeNullOrEmpty
+        }
+
+        It 'should retrieve job data <Case>' -TestCases $ParameterTestCases {
+            param(
+                $Case,
+                $Mode,
+                $Param
+            )
+            $TestJob = Get-RSJob -Name "TestJob $Case"
+
+            switch ($Mode) {
+                0 {
+                    $Parameters = & $Param
+                    $Output = @( Receive-RSJob @Verbose @Parameters )
+                }
+                1 {
+                    $Parameters = & $Param
+                    $Output = @( Receive-RSJob @Verbose $Parameters )
+                }
+                2 {
+                    $Parameters = & $Param
+                    $Output = @( $Parameters | Receive-RSJob @Verbose)
+                }
+                default {
+                    # Fail test on invalid mode
+                    'Invalid mode !' | Should be 'Invalid mode !!!'
+                }
+            }
+            $Output.Count | Should be 1
+            $Output[0] | Should be "Working on $Case"
+        }
+    }
+}
+
+Describe "Remove-RSJob PS$PSVersion" {
+    Context 'Strict mode' {
+        Set-StrictMode -Version latest
+
+        It 'should not remove a job' {
+            Remove-RSJob | Should BeNullOrEmpty
+        }
+
+        It 'should only remove specified jobs <Case>' -TestCases $ParameterTestCases {
+            param(
+                $Case,
+                $Mode,
+                $Param
+            )
+            $TestJobs = @(Get-RSJob | Where-Object { $_.Name -match "^TestJob " })
+            $TestJobs.Count -gt 0 | Should Be $True
+
+            $TestJob = $TestJobs | Where-Object { $_.Name -eq "TestJob $Case" }
+			$TestJob -is 'RSJob' | Should be $true
+
+            $AllIDs = @( $TestJobs | Select-Object -ExpandProperty Id )
+
+            switch ($Mode) {
+                0 {
+                    $Parameters = & $Param
+                    Remove-RSJob @Verbose @Parameters
+                }
+                1 {
+                    $Parameters = & $Param
+                    Remove-RSJob @Verbose $Parameters
+                }
+                2 {
+                    $Parameters = & $Param
+                    $Parameters | Remove-RSJob @Verbose
+                }
+                default {
+                    # Fail test on invalid mode
+                    'Invalid mode !' | Should be 'Invalid mode !!!'
+                }
+            }
+
+            $RemainingIDs = @( Get-RSJob @Verbose -Id $AllIDs | Select-Object -ExpandProperty Id )
+            #We only removed one
+            $RemainingIDs.Count -eq ($AllIDs.Count - 1) | Should Be $True
+            #We removed the right ID
+            $RemainingIDs -notcontains $TestJob.Id | Should Be $True
+        }
+
+        It 'should not remove job' {
+            $TestJob = 1 | Start-RSJob -Name 'ByForce' -ScriptBlock {
+                While ($True) {$Null}
+            }
+			$TestJob -is 'RSJob' | Should be $true
+            { Remove-RSJob $TestJob -ErrorAction Stop } | Should Throw
+        }
+        It 'should remove job by force' {
+            $TestJob = Get-RSJob -Name 'ByForce'
+			$TestJob -is 'RSJob' | Should be $true
+            { Remove-RSJob $TestJob -Force } | Should Not Throw
+            $TestJob = Get-RSJob -Name 'ByForce'
+			$TestJob | Should BeNullOrEmpty
+        }
+        It 'should remove all jobs' {
+            Get-RSJob @Verbose | Remove-RSJob @Verbose
+            $Output = @( Get-RSJob @Verbose )
+
+            $Output.Count | Should be 0
+        }
+    }
+}
 
 Describe "Test RSJob Throttling" {
     It "Full Pipe input" {
         $StartDate = Get-Date
         Test-RSJob $true
             $EndDate = Get-Date
-        ( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
+        ( $EndDate - $StartDate ).TotalSeconds -gt 15 | Should be $True
     }
     It "OneByOne Pipe input" {
         $StartDate = Get-Date
         Test-RSJob $false
             $EndDate = Get-Date
-            ( $EndDate - $StartDate ).TotalSeconds -gt 25 | Should be $True
+            ( $EndDate - $StartDate ).TotalSeconds -gt 15 | Should be $True
     }
 }
-
 
 Describe "Module OnRemove Actions PS$PSVersion" {
     Context 'Strict mode' {
