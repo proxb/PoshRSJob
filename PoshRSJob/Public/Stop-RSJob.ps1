@@ -48,10 +48,10 @@ Function Stop-RSJob {
         [Alias('InputObject')]
         [RSJob[]]$Job,
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
-        ParameterSetName='Name')]
+        ParameterSetName='Name', Position=0)]
         [string[]]$Name,
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
-        ParameterSetName='Id')]
+        ParameterSetName='Id', Position=0)]
         [int[]]$Id,
         [parameter(ValueFromPipelineByPropertyName=$True,
         ParameterSetName='InstanceID')]
