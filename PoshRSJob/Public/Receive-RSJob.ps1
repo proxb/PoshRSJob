@@ -77,8 +77,10 @@ Function Receive-RSJob {
     Process {
         Write-Debug "ParameterSet: $($PSCmdlet.ParameterSetName)"
         $Property = $PSCmdlet.ParameterSetName
-        Write-Verbose "Adding $($PSBoundParameters[$Property])"
-        [void]$List.AddRange($PSBoundParameters[$Property])
+        if ($PSBoundParameters[$Property]) {
+            Write-Verbose "Adding $($PSBoundParameters[$Property])"
+            [void]$List.AddRange($PSBoundParameters[$Property])
+        }
     }
     End {
         if (-not $List.Count) { return } # No jobs selected to search

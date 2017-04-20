@@ -92,7 +92,7 @@ Function Wait-RSJob {
     Process {
         Write-Debug "ParameterSet: $($PSCmdlet.ParameterSetName)"
         $Property = $PSCmdlet.ParameterSetName
-        if ($PSCmdlet.ParameterSetName -ne 'All') {
+        if ($PSCmdlet.ParameterSetName -ne 'All' -and $PSBoundParameters[$Property]) {
             Write-Verbose "Adding $($PSBoundParameters[$Property])"
             [void]$List.AddRange($PSBoundParameters[$Property])
         }
