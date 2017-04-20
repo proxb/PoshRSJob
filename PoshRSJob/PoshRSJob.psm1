@@ -191,13 +191,14 @@ $PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_Runsp
 $PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("ParentHost",$Host) 
 $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
     #Routine to handle completed runspaces
+    $DisposePoshRS_RunspacePools=$False
     Do { 
         #$ParentHost.ui.WriteVerboseLine("Beginning Do Statement")
         If ($DisposePoshRS_RunspacePools) {
             #Perform garbage collection
             [gc]::Collect()
         }
-        $DisposePoshRS_RunspacePools=$False  
+        $DisposePoshRS_RunspacePools=$False
         If ($PoshRS_RunspacePools.Count -gt 0) { 
             #$ParentHost.ui.WriteVerboseLine("$($PoshRS_RunspacePools | Out-String)")           
             [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
