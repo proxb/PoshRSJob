@@ -80,8 +80,8 @@ Function Remove-RSJob {
         [void]$List.AddRange($PSBoundParameters[$Property])
     }
     End {
-        $PSBoundParameters[$Property] = $List
         if (-not $List.Count) { return } # No jobs selected to search
+        $PSBoundParameters[$Property] = $List
         [void]$PSBoundParameters.Remove('Force')
         [array]$ToRemove = Get-RSJob @PSBoundParameters
         if ($ToRemove.Count) {

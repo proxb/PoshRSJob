@@ -73,8 +73,8 @@ Function Stop-RSJob {
         [void]$List.AddRange($PSBoundParameters[$Property])
     }
     End {
-        $PSBoundParameters[$Property] = $List
         if (-not $List.Count) { return } # No jobs selected to search
+        $PSBoundParameters[$Property] = $List
         [array]$ToStop = Get-RSJob @PSBoundParameters
 
         If ($ToStop.Count) {
