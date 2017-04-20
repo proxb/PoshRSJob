@@ -190,8 +190,8 @@ Function Start-RSJob {
         }
         If ($PSBoundParameters.ContainsKey('Name')) {
             If ($Name -isnot [scriptblock]) {
-                $JobName = [scriptblock]::Create("Write-Output $Name")
-            } 
+                $JobName = [scriptblock]::Create("Write-Output `"$Name`"")
+            }
             Else {
                 $JobName = [scriptblock]::Create( ($Name -replace '\$_','$Item'))
             }
