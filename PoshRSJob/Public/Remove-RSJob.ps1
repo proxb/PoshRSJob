@@ -86,21 +86,25 @@ Function Remove-RSJob {
         [array]$ToRemove = Get-RSJob @PSBoundParameters
         if ($ToRemove.Count) {
             [System.Threading.Monitor]::Enter($PoshRS_Jobs.syncroot)
-            $ToRemove | ForEach-Object {
-                If ($PSCmdlet.ShouldProcess("Name: $($_.Name), associated with JobID $($_.Id)",'Remove')) {
-                    If ($_.State -notmatch 'Completed|Failed|Stopped') {
-                        If ($Force) {
-                            [void] $_.InnerJob.Stop()
-                            $PoshRS_Jobs.Remove($_)
+            try {
+                $ToRemove | ForEach-Object {
+                    If ($PSCmdlet.ShouldProcess("Name: $($_.Name), associated with JobID $($_.Id)",'Remove')) {
+                        If ($_.State -notmatch 'Completed|Failed|Stopped') {
+                            If ($Force) {
+                                [void] $_.InnerJob.Stop()
+                                $PoshRS_Jobs.Remove($_)
+                            } Else {
+                                Write-Error "Unable to remove job $($_.InstanceID)"
+                            }
                         } Else {
-                            Write-Error "Unable to remove job $($_.InstanceID)"
+                            [void]$PoshRS_Jobs.Remove($_)
                         }
-                    } Else {
-                        [void]$PoshRS_Jobs.Remove($_)
                     }
                 }
             }
-            [System.Threading.Monitor]::Exit($PoshRS_Jobs.syncroot)
+            finally {
+                [System.Threading.Monitor]::Exit($PoshRS_Jobs.syncroot)
+            }
         }
     }
 }
