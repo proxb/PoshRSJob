@@ -1,4 +1,11 @@
 ---------
+|1.7.3.11|
+---------
+* #139 (Wait-RSJob is not working with parameter set Name or ID)
+* #140 (Wait-RSJob doesn't sleep)
+* #141 (-RSJob question)
+
+---------
 |1.7.3.10|
 ---------
 * #139 (Wait-RSJob is not working with parameter set Name or ID.)
