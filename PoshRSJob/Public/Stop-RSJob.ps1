@@ -6,6 +6,9 @@ Function Stop-RSJob {
         .DESCRIPTION
             Stops a Windows PowerShell background job that has been started using Start-RSJob
 
+        .PARAMETER Job
+            The job object to stop.
+
         .PARAMETER Name
             The name of the jobs to stop..
 
@@ -14,16 +17,13 @@ Function Stop-RSJob {
 
         .PARAMETER InstanceID
             The GUID of the jobs to stop.
-            
-        .PARAMETER Job
-            The job object to stop.  
-            
-        .PARAMETER Batch 
-            Name of the set of jobs                   
+
+        .PARAMETER Batch
+            Name of the set of jobs to stop.
 
         .NOTES
             Name: Stop-RSJob
-            Author: Boe Prox                
+            Author: Boe Prox/Max Kozlov
 
         .EXAMPLE
             Get-RSJob -State Completed | Stop-RSJob
@@ -44,99 +44,55 @@ Function Stop-RSJob {
     )]
     Param (
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
-        ParameterSetName='Name')]
+        ParameterSetName='Job', Position=0)]
+        [Alias('InputObject')]
+        [RSJob[]]$Job,
+        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
+        ParameterSetName='Name', Position=0)]
         [string[]]$Name,
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
-        ParameterSetName='Id')]
+        ParameterSetName='Id', Position=0)]
         [int[]]$Id,
-        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
-        ParameterSetName='Guid')]
-        [guid[]]$InstanceID,
+        [parameter(ValueFromPipelineByPropertyName=$True,
+        ParameterSetName='InstanceID')]
+        [string[]]$InstanceID,
         [parameter(ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Batch')]
-        [string[]]$Batch,
-        [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [RSJob[]]$Job
+        [string[]]$Batch
     )
-    Begin {        
+    Begin {
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
-        }  
-        Write-Debug "Begin"      
+        }
         $List = New-Object System.Collections.ArrayList
-        $StringBuilder = New-Object System.Text.StringBuilder
-
-        #Take care of bound parameters
-        $Bound = $False
-        If ($PSBoundParameters['Name']) {
-            [void]$list.AddRange($Name)
-            $Bound = $True
-        }
-        If ($PSBoundParameters['Id']) {
-            [void]$list.AddRange($Id)
-            $Bound = $True
-        }
-        If ($PSBoundParameters['InstanceId']) {
-            [void]$list.AddRange($InstanceId)
-            $Bound = $True
-        }
-        If ($PSBoundParameters['Job']) {
-            [void]$list.AddRange($Job)
-            $Bound = $True
-        }
-        If ($PSBoundParameters['Batch']) {
-            [void]$list.AddRange($Batch)
-            $Bound = $True
-        }
-        Write-Debug "Process"
     }
     Process {
-        If (-Not $Bound) {
-            [void]$List.Add($_)
+        Write-Debug "ParameterSet: $($PSCmdlet.ParameterSetName)"
+        $Property = $PSCmdlet.ParameterSetName
+        if ($PSBoundParameters[$Property]) {
+            Write-Verbose "Adding $($PSBoundParameters[$Property])"
+            [void]$List.AddRange($PSBoundParameters[$Property])
         }
     }
     End {
-        Write-Debug "End"
-        Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
-        Switch ($PSCmdlet.parametersetname) {
-            'Name' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
-                [void]$StringBuilder.Append("`$_.Name -match $Items") 
-                $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                    
-            }
-            'Id' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$StringBuilder.Append("`$_.Id -match $Items") 
-                $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())                
-            }
-            'Guid' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$StringBuilder.Append("`$_.InstanceId -match $Items")   
-                $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString())   
-            }
-            'Batch' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$StringBuilder.Append("`$_.batch -match $Items")   
-                $ScriptBlock = [scriptblock]::Create($StringBuilder.ToString()) 
-            } 	
-            Default {$ScriptBlock=$Null}
-        }
-        If ($ScriptBlock) {
-            Write-Verbose "Using ScriptBlock"
-            $ToStop = $PoshRS_jobs | Where-Object $ScriptBlock
-        } Else {
-            $ToStop = $List
-        }
-        If ($ToStop) {
-            [System.Threading.Monitor]::Enter($PoshRS_jobs.syncroot)         
-            $ToStop | ForEach-Object {            
-                Write-Verbose "Stopping $($_.InstanceId)"
-                if ($_.State -ne 'Completed') {
-                    Write-Verbose "Killing job $($_.InstanceId)"
-                    [void] $_.InnerJob.Stop()
+        if (-not $List.Count) { return } # No jobs selected to search
+        $PSBoundParameters[$Property] = $List
+        [array]$ToStop = Get-RSJob @PSBoundParameters
+
+        If ($ToStop.Count) {
+            [System.Threading.Monitor]::Enter($PoshRS_jobs.syncroot)
+            try {
+                $ToStop | ForEach-Object {
+                    Write-Verbose "Stopping $($_.InstanceId)"
+                    if ($_.State -ne 'Completed') {
+                        Write-Verbose "Killing job $($_.InstanceId)"
+                        [void] $_.InnerJob.Stop()
+                    }
                 }
             }
-            [System.Threading.Monitor]::Exit($PoshRS_jobs.syncroot)
+            finally {
+                [System.Threading.Monitor]::Exit($PoshRS_jobs.syncroot)
+            }
         }
-    }  
+    }
 }

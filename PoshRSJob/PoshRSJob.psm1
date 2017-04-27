@@ -1,5 +1,5 @@
 $ScriptPath = Split-Path $MyInvocation.MyCommand.Path
-$PSModule = $ExecutionContext.SessionState.Module 
+$PSModule = $ExecutionContext.SessionState.Module
 $PSModuleRoot = $PSModule.ModuleBase
 If ($PSVersionTable['PSEdition'] -and $PSVersionTable.PSEdition -eq 'Core') {
 #PowerShell V4 and below will throw a parser error even if I never use the classes keyword
@@ -10,7 +10,7 @@ If ($PSVersionTable['PSEdition'] -and $PSVersionTable.PSEdition -eq 'Core') {
         [object]$Value
         [string]$NewVarName
     }
- 
+
     class RSRunspacePool{
         [System.Management.Automation.Runspaces.RunspacePool]$RunspacePool
         [System.Management.Automation.Runspaces.RunspacePoolState]$State
@@ -53,7 +53,7 @@ Else {
     using System.Collections.Generic;
     using System.Text;
     using System.Management.Automation;
- 
+
     public class V2UsingVariable
     {
         public string Name;
@@ -61,7 +61,7 @@ Else {
         public object Value;
         public string NewVarName;
     }
- 
+
     public class RSRunspacePool
     {
         public System.Management.Automation.Runspaces.RunspacePool RunspacePool;
@@ -115,60 +115,64 @@ New-Variable PoshRS_RunspacePoolCleanup -Value ([hashtable]::Synchronized(@{})) 
 Write-Verbose "Creating routine to monitor RS jobs"
 $PoshRS_jobCleanup.Flag=$True
 $PoshRS_jobCleanup.Host = $Host
-$PoshRS_jobCleanup.Runspace =[runspacefactory]::CreateRunspace()   
-$PoshRS_jobCleanup.Runspace.Open()         
-$PoshRS_jobCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_jobCleanup",$PoshRS_jobCleanup)     
-$PoshRS_jobCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_Jobs",$PoshRS_Jobs) 
+$PoshRS_jobCleanup.Runspace =[runspacefactory]::CreateRunspace()
+$PoshRS_jobCleanup.Runspace.Open()
+$PoshRS_jobCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_jobCleanup",$PoshRS_jobCleanup)
+$PoshRS_jobCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_Jobs",$PoshRS_Jobs)
 $PoshRS_jobCleanup.PowerShell = [PowerShell]::Create().AddScript({
     #Routine to handle completed runspaces
-    #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("Begin Do Loop") 
-    Do {   
-        [System.Threading.Monitor]::Enter($PoshRS_Jobs.syncroot) 
-        Foreach($job in $PoshRS_Jobs) {            
-            If ($job.Handle.isCompleted -AND (-NOT $Job.Completed)) {   
-                #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) completed")  
-                $Data = $null
-                Try {           
-                    $Data = $job.InnerJob.EndInvoke($job.Handle)
-                } Catch {
-                    $CaughtErrors = $Error
-                    #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Caught terminating Error in job: $_") 
-                }
-                #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Checking for errors") 
-                If ($job.InnerJob.Streams.Error -OR $CaughtErrors) {
-                    #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Errors Found!")
-                    $ErrorList = New-Object System.Management.Automation.PSDataCollection[System.Management.Automation.ErrorRecord]
-                    If ($job.InnerJob.Streams.Error) {
-                        ForEach ($Err in $job.InnerJob.Streams.Error) {
-                            #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("`t$($Job.Id) Adding Error")             
-                            [void]$ErrorList.Add($Err)
+    #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("Begin Do Loop")
+    Do {
+        [System.Threading.Monitor]::Enter($PoshRS_Jobs.syncroot)
+        try {
+            Foreach($job in $PoshRS_Jobs) {
+                If ($job.Handle.isCompleted -AND (-NOT $Job.Completed)) {
+                    #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) completed")
+                    $Data = $null
+                    Try {
+                        $Data = $job.InnerJob.EndInvoke($job.Handle)
+                    } Catch {
+                        $CaughtErrors = $Error
+                        #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Caught terminating Error in job: $_")
+                    }
+                    #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Checking for errors")
+                    If ($job.InnerJob.Streams.Error -OR $CaughtErrors) {
+                        #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Errors Found!")
+                        $ErrorList = New-Object System.Management.Automation.PSDataCollection[System.Management.Automation.ErrorRecord]
+                        If ($job.InnerJob.Streams.Error) {
+                            ForEach ($Err in $job.InnerJob.Streams.Error) {
+                                #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("`t$($Job.Id) Adding Error")
+                                [void]$ErrorList.Add($Err)
+                            }
                         }
+                        If ($CaughtErrors) {
+                            ForEach ($Err in $CaughtErrors) {
+                                #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("`t$($Job.Id) Adding Error")
+                                [void]$ErrorList.Add($Err)
+                            }
+                        }
+                        $job.Error = $ErrorList
                     }
-                    If ($CaughtErrors) {
-                        ForEach ($Err in $CaughtErrors) {
-                            #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("`t$($Job.Id) Adding Error")             
-                            [void]$ErrorList.Add($Err)
-                        }                    
+                    #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Disposing job")
+                    $job.InnerJob.dispose()
+                    #Return type from Invoke() is a generic collection; need to verify the first index is not NULL
+                    If (($Data.Count -gt 0) -AND (-NOT ($Data.Count -eq 1 -AND $Null -eq $Data[0]))) {
+                        $job.output = $Data
+                        $job.HasMoreData = $True
                     }
-                    $job.Error = $ErrorList
+                    $Error.Clear()
+                    $job.Completed = $True
                 }
-                #$PoshRS_jobCleanup.Host.UI.WriteVerboseLine("$($Job.Id) Disposing job")
-                $job.InnerJob.dispose() 
-                #Return type from Invoke() is a generic collection; need to verify the first index is not NULL
-                If (($Data.Count -gt 0) -AND (-NOT ($Data.Count -eq 1 -AND $Null -eq $Data[0]))) {   
-                    $job.output = $Data
-                    $job.HasMoreData = $True                           
-                }              
-                $Error.Clear()
-                $job.Completed = $True
-            } 
-        }        
-        [System.Threading.Monitor]::Exit($PoshRS_Jobs.syncroot)
-        Start-Sleep -Milliseconds 100     
+            }
+        }
+        finally {
+            [System.Threading.Monitor]::Exit($PoshRS_Jobs.syncroot)
+        }
+        Start-Sleep -Milliseconds 100
     } while ($PoshRS_jobCleanup.Flag)
 })
 $PoshRS_jobCleanup.PowerShell.Runspace = $PoshRS_jobCleanup.Runspace
-$PoshRS_jobCleanup.Handle = $PoshRS_jobCleanup.PowerShell.BeginInvoke()  
+$PoshRS_jobCleanup.Handle = $PoshRS_jobCleanup.PowerShell.BeginInvoke()
 
 Write-Verbose "Creating routine to monitor Runspace Pools"
 $PoshRS_RunspacePoolCleanup.Flag=$True
@@ -176,7 +180,7 @@ $PoshRS_RunspacePoolCleanup.Host=$Host
 #2 minute timeout for unused runspace pools
 $PoshRS_RunspacePoolCleanup.Timeout = [timespan]::FromMinutes(2).Ticks
 $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
- 
+
 #Create Type Collection so the object will work properly
 $Types = Get-ChildItem "$($PSScriptRoot)\TypeData" -Filter *Types* | Select-Object -ExpandProperty Fullname
 ForEach ($Type in $Types) {
@@ -184,61 +188,66 @@ ForEach ($Type in $Types) {
     $InitialSessionState.Types.Add($TypeConfigEntry)
 }
 $PoshRS_RunspacePoolCleanup.Runspace =[runspacefactory]::CreateRunspace($InitialSessionState)
-  
-$PoshRS_RunspacePoolCleanup.Runspace.Open()         
-$PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_RunspacePoolCleanup",$PoshRS_RunspacePoolCleanup)     
-$PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_RunspacePools",$PoshRS_RunspacePools) 
-$PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("ParentHost",$Host) 
+
+$PoshRS_RunspacePoolCleanup.Runspace.Open()
+$PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_RunspacePoolCleanup",$PoshRS_RunspacePoolCleanup)
+$PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_RunspacePools",$PoshRS_RunspacePools)
+$PoshRS_RunspacePoolCleanup.Runspace.SessionStateProxy.SetVariable("ParentHost",$Host)
 $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
     #Routine to handle completed runspaces
-    Do { 
+    $DisposePoshRS_RunspacePools=$False
+    Do {
         #$ParentHost.ui.WriteVerboseLine("Beginning Do Statement")
         If ($DisposePoshRS_RunspacePools) {
             #Perform garbage collection
             [gc]::Collect()
         }
-        $DisposePoshRS_RunspacePools=$False  
-        If ($PoshRS_RunspacePools.Count -gt 0) { 
-            #$ParentHost.ui.WriteVerboseLine("$($PoshRS_RunspacePools | Out-String)")           
-            [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) 
-            Foreach($RunspacePool in $PoshRS_RunspacePools) {                
-                #$ParentHost.ui.WriteVerboseLine("RunspacePool <$($RunspacePool.RunspacePoolID)> | MaxJobs: $($RunspacePool.MaxJobs) | AvailJobs: $($RunspacePool.AvailableJobs)")
-                If (($RunspacePool.AvailableJobs -eq $RunspacePool.MaxJobs) -AND $PoshRS_RunspacePools.LastActivity.Ticks -ne 0) {
-                    If ((Get-Date).Ticks - $RunspacePool.LastActivity.Ticks -gt $PoshRS_RunspacePoolCleanup.Timeout) {
-                        #Dispose of runspace pool
-                        $RunspacePool.RunspacePool.Close()
-                        $RunspacePool.RunspacePool.Dispose()
-                        $RunspacePool.CanDispose = $True
-                        $DisposePoshRS_RunspacePools=$True
+        $DisposePoshRS_RunspacePools=$False
+        If ($PoshRS_RunspacePools.Count -gt 0) {
+            #$ParentHost.ui.WriteVerboseLine("$($PoshRS_RunspacePools | Out-String)")
+            [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot)
+            try {
+                Foreach($RunspacePool in $PoshRS_RunspacePools) {
+                    #$ParentHost.ui.WriteVerboseLine("RunspacePool <$($RunspacePool.RunspacePoolID)> | MaxJobs: $($RunspacePool.MaxJobs) | AvailJobs: $($RunspacePool.AvailableJobs)")
+                    If (($RunspacePool.AvailableJobs -eq $RunspacePool.MaxJobs) -AND $PoshRS_RunspacePools.LastActivity.Ticks -ne 0) {
+                        If ((Get-Date).Ticks - $RunspacePool.LastActivity.Ticks -gt $PoshRS_RunspacePoolCleanup.Timeout) {
+                            #Dispose of runspace pool
+                            $RunspacePool.RunspacePool.Close()
+                            $RunspacePool.RunspacePool.Dispose()
+                            $RunspacePool.CanDispose = $True
+                            $DisposePoshRS_RunspacePools=$True
+                        }
+                    } Else {
+                        $RunspacePool.LastActivity = (Get-Date)
                     }
-                } Else {
-                    $RunspacePool.LastActivity = (Get-Date)
-                }               
-            }       
-            #Remove runspace pools
-            If ($DisposePoshRS_RunspacePools) {
-                $TempCollection = $PoshRS_RunspacePools.Clone()
-                $TempCollection | Where-Object {
-                    $_.CanDispose
-                } | ForEach-Object {
-                    #$ParentHost.ui.WriteVerboseLine("Removing runspacepool <$($_.RunspacePoolID)>")
-                    [void]$PoshRS_RunspacePools.Remove($_)
                 }
-                #Not setting this to silentlycontinue seems to cause another runspace to be created if an error occurs
-                Remove-Variable TempCollection -ErrorAction SilentlyContinue
+                #Remove runspace pools
+                If ($DisposePoshRS_RunspacePools) {
+                    $TempCollection = $PoshRS_RunspacePools.Clone()
+                    $TempCollection | Where-Object {
+                        $_.CanDispose
+                    } | ForEach-Object {
+                        #$ParentHost.ui.WriteVerboseLine("Removing runspacepool <$($_.RunspacePoolID)>")
+                        [void]$PoshRS_RunspacePools.Remove($_)
+                    }
+                    #Not setting this to silentlycontinue seems to cause another runspace to be created if an error occurs
+                    Remove-Variable TempCollection -ErrorAction SilentlyContinue
+                }
             }
-            [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
+            finally {
+                [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
+            }
         }
-            #$ParentHost.ui.WriteVerboseLine("Sleeping")
+        #$ParentHost.ui.WriteVerboseLine("Sleeping")
         If ($DisposePoshRS_RunspacePools) {
             #Perform garbage collection
             [gc]::Collect()
         }
-        Start-Sleep -Milliseconds 5000     
+        Start-Sleep -Milliseconds 5000
     } while ($PoshRS_RunspacePoolCleanup.Flag)
 })
 $PoshRS_RunspacePoolCleanup.PowerShell.Runspace = $PoshRS_RunspacePoolCleanup.Runspace
-$PoshRS_RunspacePoolCleanup.Handle = $PoshRS_RunspacePoolCleanup.PowerShell.BeginInvoke() 
+$PoshRS_RunspacePoolCleanup.Handle = $PoshRS_RunspacePoolCleanup.PowerShell.BeginInvoke()
 #endregion Cleanup Routine
 
 #region Load Public Functions
@@ -292,7 +301,7 @@ $PoshRS_OnRemoveScript = {
     #Let sit for a second to make sure it has had time to stop
     Start-Sleep -Seconds 1
     $PoshRS_jobCleanup.PowerShell.EndInvoke($PoshRS_jobCleanup.Handle)
-    $PoshRS_jobCleanup.PowerShell.Dispose()    
+    $PoshRS_jobCleanup.PowerShell.Dispose()
     $PoshRS_RunspacePoolCleanup.PowerShell.EndInvoke($PoshRS_RunspacePoolCleanup.Handle)
     $PoshRS_RunspacePoolCleanup.PowerShell.Dispose()
     Remove-Variable PoshRS_JobId -Scope Global -Force

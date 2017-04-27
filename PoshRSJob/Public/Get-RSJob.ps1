@@ -7,14 +7,20 @@ Function Get-RSJob {
             Get-RSJob will display all jobs that are currently available to include completed and currently running jobs.
             If no parameters are given, all jobs are displayed to view.
 
+        .PARAMETER Job
+            Represents the RSJob object being sent to query for.
+
         .PARAMETER Name
             The name of the jobs to query for.
 
         .PARAMETER ID
-            The ID of the jobs that you want to display.
+            The ID of the jobs to query for.
 
         .PARAMETER InstanceID
-            The GUID of the jobs that you want to display.
+            The GUID of the jobs to query for.
+
+        .PARAMETER Batch
+            Name of the set of jobs to query for.
 
         .PARAMETER State
             The State of the job that you want to display. Accepted values are:
@@ -27,16 +33,13 @@ Function Get-RSJob {
             Stopped
             Disconnected
 
-        .PARAMETER Batch 
-            Name of the set of jobs
-
         .PARAMETER HasMoreData
             Displays jobs that have data being outputted. You can specify -HasMoreData:$False to display jobs
-            that have no data to output.            
+            that have no data to output.
 
         .NOTES
             Name: Get-RSJob
-            Author: Boe Prox                
+            Author: Boe Prox/Max Kozlov
 
         .EXAMPLE
             Get-RSJob -State Completed
@@ -64,108 +67,87 @@ Function Get-RSJob {
     )]
     Param (
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
-        ParameterSetName='Name')]
+        ParameterSetName='Job', Position=0)]
+        [Alias('InputObject')]
+        [RSJob[]]$Job,
+        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
+        ParameterSetName='Name', Position=0)]
         [string[]]$Name,
         [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
-        ParameterSetName='Id')]
+        ParameterSetName='Id', Position=0)]
         [int[]]$Id,
-        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,
-        ParameterSetName='Guid')]
-        [guid[]]$InstanceID,
-        [parameter(ParameterSetName='Batch')]
-        [parameter(ParameterSetName='Name')]
-        [parameter(ParameterSetName='Id')]
-        [parameter(ParameterSetName='Guid')]
-        [parameter(ParameterSetName='All')]
-        [ValidateSet('NotStarted','Running','Completed','Failed','Stopping','Stopped','Disconnected')]
-        [string[]]$State,
+        [parameter(ValueFromPipelineByPropertyName=$True,
+        ParameterSetName='InstanceID')]
+        [string[]]$InstanceID,
         [parameter(ValueFromPipelineByPropertyName=$True,
         ParameterSetName='Batch')]
         [string[]]$Batch,
+
         [parameter(ParameterSetName='Batch')]
         [parameter(ParameterSetName='Name')]
         [parameter(ParameterSetName='Id')]
-        [parameter(ParameterSetName='Guid')]
+        [parameter(ParameterSetName='InstanceID')]
         [parameter(ParameterSetName='All')]
-        [Switch]$HasMoreData,
-        [parameter(ValueFromPipeline=$True,ParameterSetName='Job')]
-        [RSJob[]]$Job        
+        [ValidateSet('NotStarted','Running','Completed','Failed','Stopping','Stopped','Disconnected')]
+        [string[]]$State,
+        [parameter(ParameterSetName='Batch')]
+        [parameter(ParameterSetName='Name')]
+        [parameter(ParameterSetName='Id')]
+        [parameter(ParameterSetName='InstanceID')]
+        [parameter(ParameterSetName='All')]
+        [Switch]$HasMoreData
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
-        }        
+        }
         Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
-        $List = New-Object System.Collections.ArrayList
-        $WhereList = New-Object System.Collections.ArrayList
-        
-        #Take care of bound parameters
-        $Bound = $False
-        If ($PSBoundParameters['Name']) {
-            [void]$list.AddRange($Name)
-            $Bound = $True
-        }
-        If ($PSBoundParameters['Batch']) {
-            [void]$list.AddRange($Batch)
-            $Bound = $True
-        }
-        If ($PSBoundParameters['Id']) {
-            [void]$list.AddRange($Id)
-            $Bound = $True
-        }
-        If ($PSBoundParameters['InstanceId']) {
-            [void]$list.AddRange($InstanceId)
-            $Bound = $True
-        }
-        If ($PSBoundParameters['Job']){
-            [void]$list.AddRange($Job)
-            $Bound = $True
-        }                
+        $Hash = @{}
+        $ResultJobs = New-Object System.Collections.ArrayList
     }
     Process {
-        If ($PSCmdlet.ParameterSetName -ne 'All' -AND -NOT $Bound) {
-            Write-Verbose "Adding $($_)"
-            [void]$List.Add($_)
+        Write-Debug "ParameterSet: $($PSCmdlet.ParameterSetName)"
+        $Property = $PSCmdlet.ParameterSetName
+
+        if ($PSCmdlet.ParameterSetName -eq 'Job') {
+            Write-Verbose "Adding Job $($PSBoundParameters[$Property])"
+            foreach ($v in $PSBoundParameters[$Property]) {
+                $Hash.Add($v.ID,1)
+            }
+        }
+        elseif ($PSCmdlet.ParameterSetName -ne 'All') {
+            Write-Verbose "Adding $($PSBoundParameters[$Property])"
+            foreach ($v in $PSBoundParameters[$Property]) {
+                $Hash.Add($v,1)
+            }
         }
     }
-    End {        
-        Switch ($PSCmdlet.parametersetname) {
-            'Name' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|') -replace '\*','.*'
-                [void]$WhereList.Add("`$_.Name -match $Items")                    
-            }
-            'Id' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$WhereList.Add("`$_.Id -match $Items")                
-            }
-            'Guid' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$WhereList.Add("`$_.InstanceId -match $Items")  
-            }
-            'Job' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_.Id}) -join '|')
-                [void]$WhereList.Add("`$_.id -match $Items")
-            }   
-            'Batch' {
-                $Items = '"{0}"' -f (($list | ForEach-Object {"^{0}$" -f $_}) -join '|')
-                [void]$WhereList.Add("`$_.batch -match $Items")
-            }                      
+    End {
+        #Job objects searched by ID
+        if ($Property -eq 'Job') { $Property = 'ID' }
+        $States = if ($PSBoundParameters.ContainsKey('State')) { '^' + ($State -join '$|^') + '$' } else { '.' }
+
+        # IF faster than any scriptblocks
+        if ($PSCmdlet.ParameterSetName -eq 'All') {
+            Write-Verbose 'All Jobs'
+            $ResultJobs = $PoshRS_Jobs
         }
-        If ($PSBoundParameters['State']) {
-            [void]$WhereList.Add("`$_.State -match `"$($State -join '|')`"")
+        else {
+            Write-Verbose "Filtered Jobs by $Property"
+            foreach ($job in $PoshRS_Jobs) {
+                if ($Hash.ContainsKey($job.$Property))
+                {
+                    [void]$ResultJobs.Add($job)
+                }
+            }
         }
-        If ($PSBoundParameters.ContainsKey('HasMoreData')) {
-            [void]$WhereList.Add("`$_.HasMoreData -eq `$$HasMoreData")
-        }
-        Write-Debug "WhereListCount: $($WhereList.count)"
-        If ($WhereList.count -gt 0) {
-            $WhereString = $WhereList -join ' -AND '
-            $WhereBlock = [scriptblock]::Create($WhereString)
-            Write-Debug "WhereString: $($WhereString)" 
-            Write-Verbose "Using scriptblock"
-            $PoshRS_Jobs | Where-Object $WhereBlock 
-        } Else {
-            $PoshRS_Jobs
+        foreach ($job in $ResultJobs) {
+            if (($job.State -match $States) -and
+                (-not $PSBoundParameters.ContainsKey('HasMoreData') -or $job.HasMoreData -eq $HasMoreData)
+               )
+            {
+                $job
+            }
         }
     }
 }
