@@ -1,6 +1,7 @@
 ﻿Function ConvertScriptBlockV2 {
     Param (
         [scriptblock]$ScriptBlock,
+        [bool]$HasParam,
         $UsingVariable,
         $UsingVariableValue
     )
@@ -13,14 +14,13 @@
     $UsingVariable | ForEach-Object {
         $UsingHash["Using:$($_.Name)"] = $_.NewVarName
     }
-    $HasParam = IsExistingParamBlock -ScriptBlock $ScriptBlock
     $Params = New-Object System.Collections.ArrayList
     If ($Script:Add_) {
         [void]$Params.Add('$_')
     }
     If ($UsingVariable) {        
         [void]$Params.AddRange(@($UsingVariable | Select-Object -ExpandProperty NewName))
-    } 
+    }
     $NewParams = $Params -join ', '  
     If (-Not $HasParam) {
         [void]$StringBuilder.Append("Param($($NewParams))")

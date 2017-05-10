@@ -167,6 +167,33 @@ Describe "Start-RSJob PS$PSVersion" {
             $Output1.Count | Should be 1
             $Output5.Count | Should be 5
         }
+        InModuleScope PoshRSJob {
+            It 'should get first param list, 4 variables' {
+                $Output1 = @(GetParamVariable -ScriptBlock {
+                    [CmdletBinding()]
+                    #Comment
+                    Param($a = $b + $c,
+                    $d,
+                    [Parameter()]
+                    $e = [pscustomobject]@{
+                        a = $c
+                        b = invoke-command { $args } -argumentlist $b,$c,3
+                    },
+                    [ValidateScript({$_ -eq $c,$b})]
+                    $f)
+                    $a, $b, $c, $d, $e
+                    Invoke-Command { param($ip) $ip }
+                }) -join ''
+                $Output1 | Should Be 'adef'
+            }
+            It 'should not get internal param list' {
+                $Output1 = @(GetParamVariable -ScriptBlock {
+                    $a, $b, $c, $d, $e
+                    Invoke-Command { param($ip) $ip }
+                }).Count
+                $Output1 | Should Be 0
+            }
+        }
         It 'should support $using syntax' {
             $Test = "5"
             $Output1 = 1 | Start-RSJob @Verbose -ScriptBlock {

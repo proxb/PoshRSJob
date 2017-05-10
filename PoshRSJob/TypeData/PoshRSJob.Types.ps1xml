@@ -83,7 +83,7 @@
             $this.innerjob.HadErrors
          }
          Else {
-            ($this.innerjob.Streams.Error -ne $null)
+            ($this.innerjob.Streams.Error.Count -ne 0)
          }
         </GetScriptBlock>
       </ScriptProperty>

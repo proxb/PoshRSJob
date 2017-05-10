@@ -281,7 +281,8 @@ Function Start-RSJob {
     }
     End {
         Write-Debug "[END]"
-        $SBParamCount = @(GetParamVariable -ScriptBlock $ScriptBlock).Count
+        $SBParamVars = @(GetParamVariable -ScriptBlock $ScriptBlock)
+        $SBParamCount = $SBParamVars.Count
         $ArgumentCount = If (-NOT $ArgumentList -or ($SingleArgument -eq 0)) { # Empty array, or, 0 count
             0
         }
@@ -344,7 +345,7 @@ Function Start-RSJob {
                     Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
                 }
                 If ($UsingVariables.count -gt 0 -OR $Script:Add_) {
-                    $NewScriptBlock = ConvertScriptBlockV2 $ScriptBlock -UsingVariable $UsingVariables -UsingVariableValue $UsingVariableValues
+                    $NewScriptBlock = ConvertScriptBlockV2 $ScriptBlock -UsingVariable $UsingVariables -UsingVariableValue $UsingVariableValues -HasParam ($SBParamVars.Count -ne 0)
                 }
                 Else {
                     $NewScriptBlock = $ScriptBlock
