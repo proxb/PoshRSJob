@@ -48,7 +48,7 @@ Function Start-RSJob {
 
         .NOTES
             Name: Start-RSJob
-            Author: Boe Prox
+            Author: Boe Prox/Max Kozlov
 
         .EXAMPLE
             Get-ChildItem -Directory | Start-RSjob -Name {$_.Name} -ScriptBlock {
@@ -171,7 +171,7 @@ Function Start-RSJob {
         [parameter()]
         [string]$Batch = $([guid]::NewGuid().ToString()),
         [parameter()]
-        $ArgumentList,
+        [array]$ArgumentList = @(),
         [parameter()]
         [int]$Throttle = 5,
         [parameter()]
@@ -278,81 +278,65 @@ Function Start-RSJob {
             }
         }
 
-        If ($PSBoundParameters.ContainsKey('ArgumentList')) {
-            Write-Debug "$(@($ArgumentList).count) argument/s passed via -ArgumentList"
-            If (@($ArgumentList).count -le 1) {
-                $SingleArgument = $True
-            }
-            Else {
-                $SingleArgument = $False
-            }
-        }
         If ($PSBoundParameters['FilePath']) {
             $ScriptBlock = [scriptblock]::Create((Get-Content $FilePath | Out-String))
         }
 
-        $Script:List = New-Object System.Collections.ArrayList
-        If ($PSBoundParameters.ContainsKey('InputObject')) {
-            [void]$list.AddRange(@($InputObject))
-            $IsPipeline = $True
-            $IgnoreProcess = $True
-        }
-        ElseIf ($PSCmdlet.SessionState.PSVariable.Get('_') -AND $PSVersionTable.PSVersion.Major -ne2) {
-            Write-Debug '$_ found from ForEach loop'
-            $IsPipeline = $True
-            $IgnoreProcess = $False
-            #[void]$list.AddRange(@($PSCmdlet.SessionState.PSVariable.Get('_') | Select-Object -ExpandProperty Value))
+        $List = New-Object System.Collections.ArrayList
+        $ForeachDetected = $false
+        $ForeachValue = $null
+        # in v2 $_ variable always defined, so $ForeachDetected always be true on this state
+        If ($PSCmdlet.SessionState.PSVariable.Get('_')) {
+               Write-Debug 'it may be ForEach loop'
+            $ForeachDetected = $true
+            # on v2 $_ always exists in begin block, on v3+ only in process for foreach loop like    $data | Foreach-Object { "here it is: $_" }
             Try {
-                $InputObject = $PSBoundParameters['InputObject'] = @($PSCmdlet.SessionState.PSVariable.Get('_') |
-                Select-Object -ExpandProperty Value)
+                $ForeachValue = $PSCmdlet.SessionState.PSVariable.Get('_') | Select-Object -ExpandProperty Value
+                if ($ForeachValue -eq $null) {
+                    $ForeachDetected = $false # since psv2 traps on above code, we always do not support $null in $_
+                }
             }
             Catch {
-                Write-Warning "Start-RSJob : Error adding pipeline variable $($_.Exception.Message)"
+                #useless message: always exists on v2 when $_ absent and never on v3+
+                # Write-Warning "Start-RSJob : Error adding pipeline variable $($_.Exception.Message)"
+                $ForeachDetected = $false # on psv2 we doesn't support "$null | %{ Start-RSJob }" pattern
             }
         }
-        Else {
-            $IsPipeline = $True
-            $IgnoreProcess = $False
-        }
+        Write-Debug "ListCount: $($List.Count)"
     }
     Process {
         Write-Debug "[PROCESS]"
-        If ($IsPipeline -AND $PSBoundParameters.ContainsKey('InputObject') -AND -NOT $IgnoreProcess) {
-            [void]$List.Add($InputObject)
-        }
-        ElseIf ($IgnoreProcess) {
-            $IsPipeline = $True
-        }
-        Else {
-            $IsPipeline = $True
+        If ($PSBoundParameters.ContainsKey('InputObject')) {
+            [void]$List.AddRange(@($InputObject))
+            # If we here - it is not foreach loop
+            $ForeachDetected = $false
         }
     }
     End {
         Write-Debug "[END]"
         $SBParamVars = @(GetParamVariable -ScriptBlock $ScriptBlock)
         $SBParamCount = $SBParamVars.Count
-        $ArgumentCount = If (-NOT $ArgumentList -or ($SingleArgument -eq 0)) { # Empty array, or, 0 count
-            0
+        $ArgumentCount = $ArgumentList.Count
+        # We add $_ into list only if there is no InputObject
+        # so in case: $data | Foreach-Object { $_.Value | Start-RSJob }
+        # rsjob get as input $_.Value but not $_
+        # but for:  $data | Foreach-Object { Start-RSJob }
+        # rsjob can get $_ as input
+        ### for long param() lists it can lead to insert null as first param
+        ###if ($List.Count -eq 0 -and -not $ForeachDetected) {
+        ###    #make empty call ( Start-RSJob ) like   ( $null | Start-RSJob ) call to support $null as InputObject in  $null | Foreach-Object { Start-RSJob } case
+        ###    $ForeachDetected = $true
+        ###}
+        if ($ForeachDetected) {
+            Write-Debug 'it is ForEach loop'
+            [void]$List.Add($ForeachValue)
         }
-        Else {
-            @($ArgumentList).count
+        if ($List.Count) {
+            $ArgumentCount++
         }
-        If ($PSBoundParameters.ContainsKey('InputObject')) {
-            If ($ArgumentCount -gt 0) {
-                $SBParamCount++
-            }
-            Else {
-                $SBParamCount--
-            }
-        }
-        Write-Debug ("ArgumentCount: $ArgumentCount | SBParamCount: $SBParamCount | IsPipeline: $IsPipeline")
-        If ($ArgumentCount -ne $SBParamCount -AND $IsPipeline) {
-            Write-Verbose 'Will use $_ in Param() Block'
-            $InsertPSItemParam = $True
-        }
-        Else {
-            $InsertPSItemParam = $False
-        }
+        # we add $_ into param() block when (ArgumentList+InputObject).Count > scriptBlock.Param().Count #or ForeachDetected
+        $InsertPSItemParam = ($ArgumentCount -gt $SBParamCount -and $List.Count) #-or $ForeachDetected
+        Write-Debug ("ArgumentCount: $ArgumentCount | List.Count: $($List.Count) | SBParamCount: $SBParamCount | InsertPSItemParam: $InsertPSItemParam")
         #region Convert ScriptBlock for $Using:
         $PreviousErrorAction = $ErrorActionPreference
         $ErrorActionPreference = 'Stop'
@@ -456,136 +440,85 @@ Function Start-RSJob {
         Write-Debug "NewScriptBlock: $($NewScriptBlock)"
 
         #region RunspacePool Creation
-
-            [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot)
-            try {
-                $__RSPObject = $PoshRS_RunspacePools | Where-Object {
-                    $_.RunspacePoolID -eq $Batch
-                }
-                If ($__RSPObject) {
-                    Write-Verbose "Using current runspacepool <$($__RSPObject.RunspacePoolID)>"
-                    $RunspacePoolID = $__RSPObject.RunspacePoolID
-                    $RSPObject = $__RSPObject
-                    $RSPObject.LastActivity = Get-Date
-                }
-                Else {
-                    Write-Verbose "Creating new runspacepool <$Batch>"
-                    $RunspacePoolID = $Batch
-                    $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
-                    If ($RunspacePool.psobject.Properties["ApartmentState"]) {
-                        #ApartmentState doesn't exist in Nano Server
-                        $RunspacePool.ApartmentState = 'STA'
-                    }
-                    [void]$RunspacePool.SetMaxRunspaces($Throttle)
-                    If ($PSVersionTable.PSVersion.Major -gt 2) {
-                        $RunspacePool.CleanupInterval = [timespan]::FromMinutes(2)
-                    }
-                    $RunspacePool.Open()
-                    $RSPObject = New-Object RSRunspacePool -Property @{
-                        RunspacePool = $RunspacePool
-                        MaxJobs = $RunspacePool.GetMaxRunspaces()
-                        RunspacePoolID = $RunspacePoolID
-                        LastActivity = Get-Date
-                    }
-
-                    #[System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) #Temp add
-                    [void]$PoshRS_RunspacePools.Add($RSPObject)
-                }
+        [System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot)
+        try {
+            $__RSPObject = $PoshRS_RunspacePools | Where-Object {
+                $_.RunspacePoolID -eq $Batch
             }
-            finally {
-                [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
-            }
-        #endregion RunspacePool Creation
-
-        If ($List.Count -gt 0) {
-            Write-Debug "InputObject"
-            Write-Debug "ListCount: $($list.count)"
-            ForEach ($Item in $list) {
-                $ID = Increment
-                Write-Verbose "Using $($Item) as pipeline variable"
-                $PowerShell = [powershell]::Create().AddScript($NewScriptBlock)
-                $PowerShell.RunspacePool = $RSPObject.RunspacePool
-                [void]$PowerShell.AddArgument($Item)
-                Write-Verbose "Checking for Using: variables"
-                If ($UsingVariableValues.count -gt 0) {
-                    For ($i=0;$i -lt $UsingVariableValues.count;$i++) {
-                        Write-Verbose "Adding Param: $($UsingVariableValues[$i].Name) Value: $($UsingVariableValues[$i].Value)"
-                        [void]$PowerShell.AddParameter($UsingVariableValues[$i].NewVarName,$UsingVariableValues[$i].Value)
-                    }
-                }
-                Write-Verbose "Checking for ArgumentList"
-                If ($PSBoundParameters.ContainsKey('ArgumentList')) {
-                    If ($SingleArgument) {
-                        ,$ArgumentList | ForEach-Object {
-                            Write-Verbose "Adding Argument: $($_) <$($_.GetType().Fullname)>"
-                            [void]$PowerShell.AddArgument($_)
-                        }
-                    }
-                    Else {
-                        ForEach ($Argument in $ArgumentList) {
-                            Write-Verbose "Adding Argument: $($Argument) <$($Argument.GetType().Fullname)>"
-                            [void]$PowerShell.AddArgument($Argument)
-                        }
-                    }
-                }
-                Write-Verbose "Invoking Runspace"
-                $Handle = $PowerShell.BeginInvoke()
-                Write-Verbose "Determining Job Name"
-                $_JobName = If ($PSVersionTable.PSVersion.Major -eq 2) {
-                    $JobName.Invoke()
-                }
-                Else {
-                    $JobName.InvokeReturnAsIs()
-                }
-                $Object = New-Object RSJob -Property @{
-                    Name = $_JobName
-                    InputObject = $Item
-                    InstanceID = [guid]::NewGuid().ToString()
-                    ID = $ID
-                    Handle = $Handle
-                    InnerJob = $PowerShell
-                    Runspace = $PowerShell.Runspace
-                    Finished = $Handle.IsCompleted
-                    Command  = $ScriptBlock.ToString()
-                    RunspacePoolID = $RunSpacePoolID
-                    Batch = $Batch
-                }
-
+            If ($__RSPObject) {
+                Write-Verbose "Using current runspacepool <$($__RSPObject.RunspacePoolID)>"
+                $RunspacePoolID = $__RSPObject.RunspacePoolID
+                $RSPObject = $__RSPObject
                 $RSPObject.LastActivity = Get-Date
-                Write-Verbose "Adding RSJob to Jobs queue"
-                [System.Threading.Monitor]::Enter($PoshRS_Jobs.syncroot)
-                [void]$PoshRS_Jobs.Add($Object)
-                [System.Threading.Monitor]::Exit($PoshRS_Jobs.syncroot)
-                Write-Verbose "Display RSJob"
-                $Object
+            }
+            Else {
+                Write-Verbose "Creating new runspacepool <$Batch>"
+                $RunspacePoolID = $Batch
+                $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
+                If ($RunspacePool.psobject.Properties["ApartmentState"]) {
+                    #ApartmentState doesn't exist in Nano Server
+                    $RunspacePool.ApartmentState = 'STA'
+                }
+                [void]$RunspacePool.SetMaxRunspaces($Throttle)
+                If ($PSVersionTable.PSVersion.Major -gt 2) {
+                    $RunspacePool.CleanupInterval = [timespan]::FromMinutes(2)
+                }
+                $RunspacePool.Open()
+                $RSPObject = New-Object RSRunspacePool -Property @{
+                    RunspacePool = $RunspacePool
+                    MaxJobs = $RunspacePool.GetMaxRunspaces()
+                    RunspacePoolID = $RunspacePoolID
+                    LastActivity = Get-Date
+                }
+
+                #[System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) #Temp add
+                [void]$PoshRS_RunspacePools.Add($RSPObject)
             }
         }
-        Else {
-            Write-Debug "No InputObject"
+        finally {
+            [System.Threading.Monitor]::Exit($PoshRS_RunspacePools.syncroot)
+        }
+        #endregion RunspacePool Creation
+
+        Write-Debug "ListCount: $($List.Count)"
+        $RealPipeline = $List.Count -gt 0;
+        if (-Not $RealPipeline) {
+            [void]$List.Add($null) # fake job creation cycle
+        }
+        ForEach ($Item in $List) {
             $ID = Increment
             $PowerShell = [powershell]::Create().AddScript($NewScriptBlock)
             $PowerShell.RunspacePool = $RSPObject.RunspacePool
-            If ($UsingVariableValues) {
+
+            if ($RealPipeline) {
+                Write-Verbose "Using $($Item) as pipeline variable"
+                [void]$PowerShell.AddArgument($Item)
+            }
+            else {
+                Write-Verbose "No InputObject"
+            }
+            Write-Verbose "Checking for Using: variables"
+            If ($UsingVariableValues.count -gt 0) {
                 For ($i=0;$i -lt $UsingVariableValues.count;$i++) {
                     Write-Verbose "Adding Param: $($UsingVariableValues[$i].Name) Value: $($UsingVariableValues[$i].Value)"
                     [void]$PowerShell.AddParameter($UsingVariableValues[$i].NewVarName,$UsingVariableValues[$i].Value)
                 }
             }
-            If ($PSBoundParameters.ContainsKey('ArgumentList')) {
-                If ($SingleArgument) {
-                    ,$ArgumentList | ForEach-Object {
-                        Write-Verbose "Adding Argument: $($_) <$($_.GetType().Fullname)>"
-                        [void]$PowerShell.AddArgument($_)
-                    }
+            Write-Verbose "Checking for ArgumentList"
+#            if ($ArgumentList.Count -eq 1) {
+#                Write-Verbose "Adding Argument: $($ArgumentList[0]) <$($ArgumentList[0].GetType().Fullname)>"
+#                [void]$PowerShell.AddArgument($ArgumentList[0])
+#            }
+#            else {
+                ForEach ($Argument in $ArgumentList) {
+                    Write-Verbose "Adding Argument: $($Argument) <$($Argument.GetType().Fullname)>"
+                    [void]$PowerShell.AddArgument($Argument)
                 }
-                Else {
-                    ForEach ($Argument in $ArgumentList) {
-                        Write-Verbose "Adding Argument: $($Argument) <$($Argument.GetType().Fullname)>"
-                        [void]$PowerShell.AddArgument($Argument)
-                    }
-                }
-            }
+#            }
+
+            Write-Verbose "Invoking Runspace"
             $Handle = $PowerShell.BeginInvoke()
+            Write-Verbose "Determining Job Name"
             $_JobName = If ($PSVersionTable.PSVersion.Major -eq 2) {
                 $JobName.Invoke()
             }
@@ -594,7 +527,7 @@ Function Start-RSJob {
             }
             $Object = New-Object RSJob -Property @{
                 Name = $_JobName
-                InputObject = $null
+                InputObject = $Item
                 InstanceID = [guid]::NewGuid().ToString()
                 ID = $ID
                 Handle = $Handle
@@ -607,10 +540,13 @@ Function Start-RSJob {
             }
 
             $RSPObject.LastActivity = Get-Date
+            Write-Verbose "Adding RSJob to Jobs queue"
             [System.Threading.Monitor]::Enter($PoshRS_Jobs.syncroot)
             [void]$PoshRS_Jobs.Add($Object)
             [System.Threading.Monitor]::Exit($PoshRS_Jobs.syncroot)
+            Write-Verbose "Display RSJob"
             $Object
+
         }
     }
 }
