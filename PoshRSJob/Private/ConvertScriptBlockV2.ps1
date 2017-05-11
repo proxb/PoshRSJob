@@ -2,24 +2,24 @@
     Param (
         [scriptblock]$ScriptBlock,
         [bool]$HasParam,
-        $UsingVariable,
-        $UsingVariableValue
+        $UsingVariables,
+        $UsingVariableValues,
+        [bool]$InsertPSItem = $false
     )
-    $UsingVariables = $UsingVariable
-    $UsingVariable = $UsingVariableValue
+    # $HasParam unused
     $errors = [System.Management.Automation.PSParseError[]] @()
     $Tokens = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)
     $StringBuilder = New-Object System.Text.StringBuilder
     $UsingHash = @{}
-    $UsingVariable | ForEach-Object {
+    $UsingVariableValues | ForEach-Object {
         $UsingHash["Using:$($_.Name)"] = $_.NewVarName
     }
     $Params = New-Object System.Collections.ArrayList
-    If ($Script:Add_) {
+    If ($InsertPSItem) {
         [void]$Params.Add('$_')
     }
-    If ($UsingVariable) {        
-        [void]$Params.AddRange(@($UsingVariable | Select-Object -ExpandProperty NewName))
+    If ($UsingVariableValues) {
+        [void]$Params.AddRange(@($UsingVariableValues | Select-Object -ExpandProperty NewName))
     }
     $NewParams = $Params -join ', '  
     If (-Not $HasParam) {

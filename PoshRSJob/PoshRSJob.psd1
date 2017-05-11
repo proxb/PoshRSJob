@@ -85,7 +85,7 @@ AliasesToExport = 'gsj','rmsj','rsj','spsj','ssj','wsj'
 
 # List of all files packaged with this module
 FileList = 'PoshRSJob.psd1', 'PoshRSJob.psm1', 'en-US\about_PoshRSJob.help.txt', 'Private\ConvertScript.ps1', 'Private\ConvertScriptBlockV2.ps1', 
-'Private\FindFunction.ps1', 'Private\GetParamVariable.ps1', 'Private\GetUsingVariables.ps1', 'Private\GetUsingVariablesV2.ps1', 'Private\GetUsingVariableValues.ps1', 
+'Private\FindFunction.ps1', 'Private\GetParamVariable.ps1', 'Private\GetUsingVariables.ps1', 'Private\GetUsingVariablesV2.ps1',
 'Private\Increment.ps1', 'Private\RegisterScriptScopeFunction.ps1', 'Public\Get-RSJob.ps1', 'Public\Receive-RSJob.ps1',
 'Public\Remove-RSJob.ps1', 'Public\Start-RSJob.ps1', 'Public\Stop-RSJob.ps1', 'Public\Wait-RSJob.ps1', 'TypeData\PoshRSJob.Format.ps1xml', 'TypeData\PoshRSJob.Types.ps1xml',
 'Private\SetIsReceived.ps1'

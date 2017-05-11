@@ -171,11 +171,14 @@ Function Start-RSJob {
         [parameter()]
         [int]$Throttle = 5,
         [parameter()]
+        [Alias('ModulesToLoad')]
         [string[]]$ModulesToImport,
         [parameter()]
+        [Alias('PSSnapinsToLoad')]
         [string[]]$PSSnapinsToImport,
         [parameter()]
-        [string[]]$FunctionsToLoad
+        [Alias('FunctionsToLoad')]
+        [string[]]$FunctionsToImport
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
@@ -209,9 +212,9 @@ Function Start-RSJob {
                 [void]$InitialSessionState.ImportPSSnapIn($PSSnapin,[ref]$Null)
             }
         }
-        If ($PSBoundParameters['FunctionsToLoad']) {
-            Write-Verbose "Loading custom functions: $($FunctionsToLoad -join '; ')"
-            ForEach ($Function in $FunctionsToLoad) {
+        If ($PSBoundParameters['FunctionsToImport']) {
+            Write-Verbose "Loading custom functions: $($FunctionsToImport -join '; ')"
+            ForEach ($Function in $FunctionsToImport) {
                 Try {
                     RegisterScriptScopeFunction -Name $Function
                     $Definition = Get-Content Function:\$Function -ErrorAction Stop
@@ -230,6 +233,7 @@ Function Start-RSJob {
                 }
             }
         }
+
         If ($PSBoundParameters.ContainsKey('ArgumentList')) {
             Write-Debug "$(@($ArgumentList).count) argument/s passed via -ArgumentList"
             If (@($ArgumentList).count -le 1) {
@@ -300,16 +304,16 @@ Function Start-RSJob {
         Write-Debug ("ArgumentCount: $ArgumentCount | SBParamCount: $SBParamCount | IsPipeline: $IsPipeline")
         If ($ArgumentCount -ne $SBParamCount -AND $IsPipeline) {
             Write-Verbose 'Will use $_ in Param() Block'
-            $Script:Add_ = $True
+            $InsertPSItemParam = $True
         }
         Else {
-            $Script:Add_ = $False
+            $InsertPSItemParam = $False
         }
         #region Convert ScriptBlock for $Using:
         $PreviousErrorAction = $ErrorActionPreference
         $ErrorActionPreference = 'Stop'
         Write-Verbose "PowerShell Version: $($PSVersionTable.PSVersion.Major)"
-        $UsingVariableValues = @()
+        $UsingVariables = $UsingVariableValues = @()
         Switch ($PSVersionTable.PSVersion.Major) {
             2 {
                 Write-Verbose "Using PSParser with PowerShell V2"
@@ -344,18 +348,10 @@ Function Start-RSJob {
 
                     Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
                 }
-                If ($UsingVariables.count -gt 0 -OR $Script:Add_) {
-                    $NewScriptBlock = ConvertScriptBlockV2 $ScriptBlock -UsingVariable $UsingVariables -UsingVariableValue $UsingVariableValues -HasParam ($SBParamVars.Count -ne 0)
-                }
-                Else {
-                    $NewScriptBlock = $ScriptBlock
-                }
             }
             Default {
                 Write-Debug "Using AST with PowerShell V3+"
-                $UsingVariables = @(GetUsingVariables $ScriptBlock | Group-Object SubExpression | ForEach-Object {
-                    $_.Group | Select-Object -First 1
-                })
+                $UsingVariables = @(GetUsingVariables $ScriptBlock)
                 #region Get Variable Values
                 If ($UsingVariables.count -gt 0) {
                     $UsingVar = $UsingVariables | Group-Object SubExpression | ForEach-Object {$_.Group | Select-Object -First 1}
@@ -385,18 +381,33 @@ Function Start-RSJob {
                     #endregion Get Variable Values
                     Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
                 }
-                If ($UsingVariables.count -gt 0 -OR $Script:Add_) {
-                    $NewScriptBlock = ConvertScript $ScriptBlock
+            }
+        }
+        $ConvertScriptParams = @{
+            ScriptBlock = $ScriptBlock
+            HasParam = ($SBParamVars.Count -ne 0)
+            UsingVariables = $UsingVariables
+            UsingVariableValues = $UsingVariableValues
+            InsertPSItem = $InsertPSItemParam
+        }
+        If ($UsingVariableValues.Count -gt 0 -OR $InsertPSItemParam) {
+            Switch ($PSVersionTable.PSVersion.Major) {
+                2 {
+                    $NewScriptBlock = ConvertScriptBlockV2 @ConvertScriptParams
                 }
-                Else {
-                    $NewScriptBlock = $ScriptBlock
+                Default {
+                    $NewScriptBlock = ConvertScript @ConvertScriptParams
                 }
             }
         }
+        Else {
+            $NewScriptBlock = $ScriptBlock
+        }
+
         $ErrorActionPreference = $PreviousErrorAction
         #endregion Convert ScriptBlock for $Using:
 
-        Write-Debug "ScriptBlock: $($NewScriptBlock)"
+        Write-Debug "NewScriptBlock: $($NewScriptBlock)"
 
         #region RunspacePool Creation
 

@@ -1,20 +1,25 @@
 ﻿Function ConvertScript {
     Param (
-        [scriptblock]$ScriptBlock
+        [scriptblock]$ScriptBlock,
+        [bool]$HasParam,
+        $UsingVariables,
+        $UsingVariableValues,
+        [bool]$InsertPSItem = $false
     )
-    $UsingVariables = @(GetUsingVariables -ScriptBlock $ScriptBlock)
+    # $HasParam unused
     $List = New-Object 'System.Collections.Generic.List`1[System.Management.Automation.Language.VariableExpressionAst]'
     $Params = New-Object System.Collections.ArrayList
-    If ($Script:Add_) {
+    If ($InsertPSItem) {
         [void]$Params.Add('$_')
     }
     If ($UsingVariables) {        
         ForEach ($Ast in $UsingVariables) {
             [void]$list.Add($Ast.SubExpression)
         }
-        $UsingVariableData = @(GetUsingVariableValues $UsingVariables)
-        [void]$Params.AddRange(@($UsingVariableData.NewName | Select-Object -Unique))
-    } 
+    }
+    if ($UsingVariableValues) {
+        [void]$Params.AddRange(@($UsingVariableValues.NewName))
+    }
     $NewParams = $Params -join ', '
     $Tuple=[Tuple]::Create($list,$NewParams)
     $bindingFlags = [Reflection.BindingFlags]"Default,NonPublic,Instance"
