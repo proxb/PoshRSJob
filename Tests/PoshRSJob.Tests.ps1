@@ -207,6 +207,16 @@ Describe "Start-RSJob PS$PSVersion" {
             } ) | Wait-RSJob | Receive-RSJob
             $Output1 | Should Be 1
         }
+        It 'should support VariablesToImport syntax' {
+            $Output2 = @(
+                $tester0 = 'tester012'; $testvar1 = 'testvar124'; $testvar2 = 'testvar248'
+                Start-RSJob  @Verbose -ScriptBlock {
+                    $tester0
+                    $testvar1
+                    $testvar2
+                } -VariablesToImport tester0,testvar* | Wait-RSJob | Receive-RSJob)
+            ($Output2 -join ',') | Should Be 'tester012,testvar124,testvar248'
+        }
     }
 }
 
@@ -217,7 +227,7 @@ Describe "Get-RSJob PS$PSVersion" {
             $Output = @( Get-RSJob @Verbose )
             $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
 
-            $Output.count | Should be 10
+            $Output.count | Should be 11
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
             $Props -contains "HasMoreData" | Should be $True

@@ -6,7 +6,7 @@
         $UsingVariableValues,
         [bool]$InsertPSItem = $false
     )
-    # $HasParam unused
+    # $UsingVariables unused
     $errors = [System.Management.Automation.PSParseError[]] @()
     $Tokens = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)
     $StringBuilder = New-Object System.Text.StringBuilder
