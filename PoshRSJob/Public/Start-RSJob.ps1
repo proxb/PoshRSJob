@@ -331,11 +331,21 @@ Function Start-RSJob {
             Write-Debug 'it is ForEach loop'
             [void]$List.Add($ForeachValue)
         }
+        # NewParam variant
         if ($List.Count) {
             $ArgumentCount++
         }
         # we add $_ into param() block when (ArgumentList+InputObject).Count > scriptBlock.Param().Count #or ForeachDetected
         $InsertPSItemParam = ($ArgumentCount -gt $SBParamCount -and $List.Count) #-or $ForeachDetected
+
+        <# Current version behaviour variant
+        $ArgumentCount = $ArgumentList.Count
+        # Without 'Ignore' fix
+        $InsertPSItemParam = ($SBParamCount -ne 1 -or (($SBParamCount -ne $ArgumentCount) -xor $List.Count))
+        # With 'Ignore' fix
+        $InsertPSItemParam = (($SBParamCount -ne 1 -or $SBParamCount -eq $ArgumentCount) -and $List.Count)
+        #>
+
         Write-Debug ("ArgumentCount: $ArgumentCount | List.Count: $($List.Count) | SBParamCount: $SBParamCount | InsertPSItemParam: $InsertPSItemParam")
         #region Convert ScriptBlock for $Using:
         $PreviousErrorAction = $ErrorActionPreference
