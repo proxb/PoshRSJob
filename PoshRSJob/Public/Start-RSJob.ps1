@@ -413,7 +413,7 @@ Function Start-RSJob {
                 Else {
                     Write-Verbose "Creating new runspacepool <$Batch>"
                     $RunspacePoolID = $Batch
-                    $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
+                    $RunspacePool = [runspacefactory]::CreateRunspacePool(1, $Throttle, $InitialSessionState, $Host)
                     If ($RunspacePool.psobject.Properties["ApartmentState"]) {
                         #ApartmentState doesn't exist in Nano Server
                         $RunspacePool.ApartmentState = 'STA'
