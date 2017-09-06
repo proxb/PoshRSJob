@@ -42,6 +42,10 @@ Function Start-RSJob {
         .PARAMETER FunctionsToImport
             A collection of functions that will be imported for use with a background runspace job.
 
+        .PARAMETER VariablesToImport
+            A collection of variables that will be imported for use with a background runspace job.
+            If used, $using:variable not expanded !
+
         .NOTES
             Name: Start-RSJob
             Author: Boe Prox
@@ -171,11 +175,17 @@ Function Start-RSJob {
         [parameter()]
         [int]$Throttle = 5,
         [parameter()]
+        [Alias('ModulesToLoad')]
         [string[]]$ModulesToImport,
         [parameter()]
+        [Alias('PSSnapinsToLoad')]
         [string[]]$PSSnapinsToImport,
         [parameter()]
-        [string[]]$FunctionsToLoad
+        [Alias('FunctionsToLoad')]
+        [string[]]$FunctionsToImport,
+        [parameter()]
+        [Alias('VariablesToLoad')]
+        [string[]]$VariablesToImport
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
@@ -209,9 +219,9 @@ Function Start-RSJob {
                 [void]$InitialSessionState.ImportPSSnapIn($PSSnapin,[ref]$Null)
             }
         }
-        If ($PSBoundParameters['FunctionsToLoad']) {
-            Write-Verbose "Loading custom functions: $($FunctionsToLoad -join '; ')"
-            ForEach ($Function in $FunctionsToLoad) {
+        If ($PSBoundParameters['FunctionsToImport']) {
+            Write-Verbose "Loading custom functions: $($FunctionsToImport -join '; ')"
+            ForEach ($Function in $FunctionsToImport) {
                 Try {
                     RegisterScriptScopeFunction -Name $Function
                     $Definition = Get-Content Function:\$Function -ErrorAction Stop
@@ -230,6 +240,44 @@ Function Start-RSJob {
                 }
             }
         }
+        If ($PSBoundParameters['VariablesToImport']) {
+            Write-Verbose "Loading variables: $($VariablesToImport -join '; ')"
+            $UserVariables = New-Object System.Collections.ArrayList
+            $vartable = $null
+            foreach ($varname in $VariablesToImport) {
+                If ($MyInvocation.CommandOrigin -eq 'Runspace') {
+                    $vars = @(Get-Variable $varname -ErrorAction Continue | Where-Object { $_.Options -notmatch 'Constant' })
+                }
+                else {
+                    # matching support uses powershell internals
+                    if ([System.Management.Automation.WildcardPattern]::ContainsWildcardCharacters($varname)) {
+                        if (-not $vartable) {
+                            $Flags = 'static', 'nonpublic', 'instance'
+                            $internal_p = $PSCmdlet.SessionState.GetType().GetProperty('Internal',$Flags)
+                            $internal = $internal_p.GetValue($PSCmdlet.SessionState, $null)
+                            $vartable_m = $internal.GetType().GetMethod('GetVariableTable',$Flags)
+                            $vartable = $vartable_m.Invoke($internal, $null).GetEnumerator() | Select-Object -ExpandProperty Key
+                        }
+                        $vars = @($vartable | Where-Object { $_ -like $varname } | ForEach-Object {
+                            $PSCmdlet.SessionState.PSVariable.Get($_)
+                        })
+                    }
+                    else {
+                        $vars = @($PSCmdlet.SessionState.PSVariable.Get($varname))
+                    }
+                }
+                [void]$UserVariables.AddRange($vars)
+            }
+            if ($UserVariables.Count -gt 0) {
+                Write-Verbose "Loaded variables: $(($UserVariables | Select-Object -ExpandProperty Name) -join '; ')"
+                foreach($var in $UserVariables)
+                {
+                    $v = New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry -ArgumentList $var.Name, $var.Value, $var.Description
+                    $InitialSessionState.Variables.Add($v)
+                }
+            }
+        }
+
         If ($PSBoundParameters.ContainsKey('ArgumentList')) {
             Write-Debug "$(@($ArgumentList).count) argument/s passed via -ArgumentList"
             If (@($ArgumentList).count -le 1) {
@@ -281,7 +329,8 @@ Function Start-RSJob {
     }
     End {
         Write-Debug "[END]"
-        $SBParamCount = @(GetParamVariable -ScriptBlock $ScriptBlock).Count
+        $SBParamVars = @(GetParamVariable -ScriptBlock $ScriptBlock)
+        $SBParamCount = $SBParamVars.Count
         $ArgumentCount = If (-NOT $ArgumentList -or ($SingleArgument -eq 0)) { # Empty array, or, 0 count
             0
         }
@@ -299,103 +348,112 @@ Function Start-RSJob {
         Write-Debug ("ArgumentCount: $ArgumentCount | SBParamCount: $SBParamCount | IsPipeline: $IsPipeline")
         If ($ArgumentCount -ne $SBParamCount -AND $IsPipeline) {
             Write-Verbose 'Will use $_ in Param() Block'
-            $Script:Add_ = $True
+            $InsertPSItemParam = $True
         }
         Else {
-            $Script:Add_ = $False
+            $InsertPSItemParam = $False
         }
         #region Convert ScriptBlock for $Using:
         $PreviousErrorAction = $ErrorActionPreference
         $ErrorActionPreference = 'Stop'
         Write-Verbose "PowerShell Version: $($PSVersionTable.PSVersion.Major)"
-        $UsingVariableValues = @()
-        Switch ($PSVersionTable.PSVersion.Major) {
-            2 {
-                Write-Verbose "Using PSParser with PowerShell V2"
-                $UsingVariables = @(GetUsingVariablesV2 -ScriptBlock $ScriptBlock)
-                Write-Verbose "Using Count: $($UsingVariables.count)"
-                Write-Verbose "$($UsingVariables|Out-String)"
-                Write-Verbose "CommandOrigin: $($MyInvocation.CommandOrigin)"
-                If ($UsingVariables.count -gt 0) {
-                    $UsingVariableValues = @($UsingVariables | ForEach-Object {
-                        $Name = $_.Content -replace 'Using:'
-                        Try {
-                            If ($MyInvocation.CommandOrigin -eq 'Runspace') {
-                                $Value = (Get-Variable -Name $Name).Value
-                            }
-                            Else {
-                                $Value = $PSCmdlet.SessionState.PSVariable.Get($Name).Value
-                                If ([string]::IsNullOrEmpty($Value)) {
-                                    Throw 'No value!'
+        $UsingVariables = $UsingVariableValues = @()
+        if (-Not $PSBoundParameters['VariablesToImport']) {
+            Switch ($PSVersionTable.PSVersion.Major) {
+                2 {
+                    Write-Verbose "Using PSParser with PowerShell V2"
+                    $UsingVariables = @(GetUsingVariablesV2 -ScriptBlock $ScriptBlock)
+                    Write-Verbose "Using Count: $($UsingVariables.count)"
+                    Write-Verbose "$($UsingVariables|Out-String)"
+                    Write-Verbose "CommandOrigin: $($MyInvocation.CommandOrigin)"
+                    If ($UsingVariables.count -gt 0) {
+                        $UsingVariableValues = @($UsingVariables | ForEach-Object {
+                            $Name = $_.Content -replace 'Using:'
+                            Try {
+                                If ($MyInvocation.CommandOrigin -eq 'Runspace') {
+                                    $Value = (Get-Variable -Name $Name).Value
+                                }
+                                Else {
+                                    $Value = $PSCmdlet.SessionState.PSVariable.Get($Name).Value
+                                    If ([string]::IsNullOrEmpty($Value)) {
+                                        Throw 'No value!'
+                                    }
+                                }
+                                New-Object V2UsingVariable -Property @{
+                                    Name = $Name
+                                    NewName = '$__using_{0}' -f $Name
+                                    Value = $Value
+                                    NewVarName = ('__using_{0}') -f $Name
                                 }
                             }
-                            New-Object V2UsingVariable -Property @{
-                                Name = $Name
-                                NewName = '$__using_{0}' -f $Name
-                                Value = $Value
-                                NewVarName = ('__using_{0}') -f $Name
+                            Catch {
+                                Throw "Start-RSJob : The value of the using variable '$($Var.SubExpression.Extent.Text)' cannot be retrieved because it has not been set in the local session."
                             }
-                        }
-                        Catch {
-                            Throw "Start-RSJob : The value of the using variable '$($Var.SubExpression.Extent.Text)' cannot be retrieved because it has not been set in the local session."
-                        }
-                    })
+                        })
 
-                    Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
+                        Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
+                    }
                 }
-                If ($UsingVariables.count -gt 0 -OR $Script:Add_) {
-                    $NewScriptBlock = ConvertScriptBlockV2 $ScriptBlock -UsingVariable $UsingVariables -UsingVariableValue $UsingVariableValues
-                }
-                Else {
-                    $NewScriptBlock = $ScriptBlock
-                }
-            }
-            Default {
-                Write-Debug "Using AST with PowerShell V3+"
-                $UsingVariables = @(GetUsingVariables $ScriptBlock | Group-Object SubExpression | ForEach-Object {
-                    $_.Group | Select-Object -First 1
-                })
-                #region Get Variable Values
-                If ($UsingVariables.count -gt 0) {
-                    $UsingVar = $UsingVariables | Group-Object SubExpression | ForEach-Object {$_.Group | Select-Object -First 1}
-                    Write-Debug "CommandOrigin: $($MyInvocation.CommandOrigin)"
-                    $UsingVariableValues = @(ForEach ($Var in $UsingVar) {
-                        Try {
-                            If ($MyInvocation.CommandOrigin -eq 'Runspace') {
-                                $Value = Get-Variable -Name $Var.SubExpression.VariablePath.UserPath
-                            }
-                            Else {
-                                $Value = ($PSCmdlet.SessionState.PSVariable.Get($Var.SubExpression.VariablePath.UserPath))
-                                If ([string]::IsNullOrEmpty($Value)) {
-                                    Throw 'No value!'
+                Default {
+                    Write-Debug "Using AST with PowerShell V3+"
+                    $UsingVariables = @(GetUsingVariables $ScriptBlock)
+                    #region Get Variable Values
+                    If ($UsingVariables.count -gt 0) {
+                        $UsingVar = $UsingVariables | Group-Object SubExpression | ForEach-Object {$_.Group | Select-Object -First 1}
+                        Write-Debug "CommandOrigin: $($MyInvocation.CommandOrigin)"
+                        $UsingVariableValues = @(ForEach ($Var in $UsingVar) {
+                            Try {
+                                If ($MyInvocation.CommandOrigin -eq 'Runspace') {
+                                    $Value = Get-Variable -Name $Var.SubExpression.VariablePath.UserPath
+                                }
+                                Else {
+                                    $Value = ($PSCmdlet.SessionState.PSVariable.Get($Var.SubExpression.VariablePath.UserPath))
+                                    If ([string]::IsNullOrEmpty($Value)) {
+                                        Throw 'No value!'
+                                    }
+                                }
+                                [pscustomobject]@{
+                                    Name = $Var.SubExpression.Extent.Text
+                                    Value = $Value.Value
+                                    NewName = ('$__using_{0}' -f $Var.SubExpression.VariablePath.UserPath)
+                                    NewVarName = ('__using_{0}' -f $Var.SubExpression.VariablePath.UserPath)
                                 }
                             }
-                            [pscustomobject]@{
-                                Name = $Var.SubExpression.Extent.Text
-                                Value = $Value.Value
-                                NewName = ('$__using_{0}' -f $Var.SubExpression.VariablePath.UserPath)
-                                NewVarName = ('__using_{0}' -f $Var.SubExpression.VariablePath.UserPath)
+                            Catch {
+                                Throw "Start-RSJob : The value of the using variable '$($Var.SubExpression.Extent.Text)' cannot be retrieved because it has not been set in the local session."
                             }
-                        }
-                        Catch {
-                            Throw "Start-RSJob : The value of the using variable '$($Var.SubExpression.Extent.Text)' cannot be retrieved because it has not been set in the local session."
-                        }
-                    })
-                    #endregion Get Variable Values
-                    Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
-                }
-                If ($UsingVariables.count -gt 0 -OR $Script:Add_) {
-                    $NewScriptBlock = ConvertScript $ScriptBlock
-                }
-                Else {
-                    $NewScriptBlock = $ScriptBlock
+                        })
+                        #endregion Get Variable Values
+                        Write-Verbose ("Found {0} `$Using: variables!" -f $UsingVariableValues.count)
+                    }
                 }
             }
         }
+        $ConvertScriptParams = @{
+            ScriptBlock = $ScriptBlock
+            HasParam = ($SBParamVars.Count -ne 0)
+            UsingVariables = $UsingVariables
+            UsingVariableValues = $UsingVariableValues
+            InsertPSItem = $InsertPSItemParam
+        }
+        If ($UsingVariableValues.Count -gt 0 -OR $InsertPSItemParam) {
+            Switch ($PSVersionTable.PSVersion.Major) {
+                2 {
+                    $NewScriptBlock = ConvertScriptBlockV2 @ConvertScriptParams
+                }
+                Default {
+                    $NewScriptBlock = ConvertScript @ConvertScriptParams
+                }
+            }
+        }
+        Else {
+            $NewScriptBlock = $ScriptBlock
+        }
+
         $ErrorActionPreference = $PreviousErrorAction
         #endregion Convert ScriptBlock for $Using:
 
-        Write-Debug "ScriptBlock: $($NewScriptBlock)"
+        Write-Debug "NewScriptBlock: $($NewScriptBlock)"
 
         #region RunspacePool Creation
 
