@@ -110,7 +110,7 @@ Function Get-RSJob {
         $Property = $PSCmdlet.ParameterSetName
 
         if ($PSCmdlet.ParameterSetName -eq 'Job') {
-            Write-Verbose "Adding Job $($PSBoundParameters[$Property])"
+            Write-Verbose "Adding Job $($PSBoundParameters[$Property].Id)"
             foreach ($v in $PSBoundParameters[$Property]) {
                 $Hash.Add($v.ID,1)
             }

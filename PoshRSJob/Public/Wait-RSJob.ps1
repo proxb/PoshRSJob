@@ -138,5 +138,8 @@ Function Wait-RSJob {
                 break
             }
         }
+        If ($ShowProgress) {
+            Write-Progress -Activity "RSJobs Tracker" -Completed
+        }
     }
 }
