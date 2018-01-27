@@ -207,6 +207,25 @@ Describe "Start-RSJob PS$PSVersion" {
             } ) | Wait-RSJob | Receive-RSJob
             $Output1 | Should Be 1
         }
+        It 'should support FunctionFilesToImport syntax' {
+            $functionFile1 = Join-Path $env:TEMP ([GUID]::NewGuid()).Guid
+            $functionFile2 = Join-Path $env:TEMP ([GUID]::NewGuid()).Guid
+            "# test multi-lines scriptblock with comment
+            function f1 {
+                Write-Output 'r1'
+            }
+            function f2 {Write-Output 'r2'}" | Out-File $functionFile1
+            "function f3 {Write-Output 'r3'} function f4 {Write-Output 'r4'}" | Out-File $functionFile2
+            $Output = @(
+                Start-RSJob  @Verbose -ScriptBlock {
+                    f1
+                    f2
+                    f3
+                    f4
+                } -FunctionFilesToImport $functionFile1, $functionFile2 | Wait-RSJob | Receive-RSJob)
+            ($Output -join ',') | Should Be 'r1,r2,r3,r4'
+            Remove-Item $functionFile1, $functionFile2
+        }
         It 'should support VariablesToImport syntax' {
             $Output2 = @(
                 $tester0 = 'tester012'; $testvar1 = 'testvar124'; $testvar2 = 'testvar248'
@@ -214,9 +233,10 @@ Describe "Start-RSJob PS$PSVersion" {
                     $tester0
                     $testvar1
                     $testvar2
-                } -VariablesToImport tester0,testvar* | Wait-RSJob | Receive-RSJob)
+                } -VariablesToImport tester0, testvar* | Wait-RSJob | Receive-RSJob)
             ($Output2 -join ',') | Should Be 'tester012,testvar124,testvar248'
         }
+
     }
 }
 
@@ -227,7 +247,8 @@ Describe "Get-RSJob PS$PSVersion" {
             $Output = @( Get-RSJob @Verbose )
             $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
 
-            $Output.count | Should be 11
+            # Write-Output $Output
+            $Output.count | Should be 12
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
             $Props -contains "HasMoreData" | Should be $True

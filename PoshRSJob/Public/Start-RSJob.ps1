@@ -42,6 +42,9 @@ Function Start-RSJob {
         .PARAMETER FunctionsToImport
             A collection of functions that will be imported for use with a background runspace job.
 
+        .PARAMETER FunctionFilesToImport
+            A collection of files containing custom functions that will be imported into the background runspace job.
+
         .PARAMETER VariablesToImport
             A collection of variables that will be imported for use with a background runspace job.
             If used, $using:variable not expanded !
@@ -160,11 +163,11 @@ Function Start-RSJob {
         DefaultParameterSetName = 'ScriptBlock'
     )]
     Param (
-        [parameter(Mandatory=$True,Position=0,ParameterSetName = 'ScriptBlock')]
+        [parameter(Mandatory = $True, Position = 0, ParameterSetName = 'ScriptBlock')]
         [ScriptBlock]$ScriptBlock,
-        [parameter(Position=0,ParameterSetName = 'ScriptPath')]
+        [parameter(Position = 0, ParameterSetName = 'ScriptPath')]
         [string]$FilePath,
-        [parameter(ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True)]
+        [parameter(ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True)]
         [object]$InputObject,
         [parameter()]
         [object]$Name,
@@ -184,41 +187,52 @@ Function Start-RSJob {
         [Alias('FunctionsToLoad')]
         [string[]]$FunctionsToImport,
         [parameter()]
+        [Alias('FunctionFilesToLoad')]
+        [string[]]$FunctionFilesToImport,
+        [parameter()]
         [Alias('VariablesToLoad')]
         [string[]]$VariablesToImport
     )
     Begin {
+
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
         }
+
         Write-Debug "[BEGIN]"
+
         If ($PSBoundParameters.ContainsKey('Verbose')) {
             Write-Verbose "Displaying PSBoundParameters"
             $PSBoundParameters.GetEnumerator() | ForEach-Object {
                 Write-Verbose $_
             }
         }
+
         If ($PSBoundParameters.ContainsKey('Name')) {
             If ($Name -isnot [scriptblock]) {
                 $JobName = [scriptblock]::Create("Write-Output `"$Name`"")
             }
             Else {
-                $JobName = [scriptblock]::Create( ($Name -replace '\$_','$Item'))
+                $JobName = [scriptblock]::Create( ($Name -replace '\$_', '$Item'))
             }
         }
         Else {
             Write-Verbose "Creating default Job Name"
             $JobName = [scriptblock]::Create('Write-Output Job$($Id)')
         }
+
         $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+
         If ($PSBoundParameters['ModulesToImport']) {
             [void]$InitialSessionState.ImportPSModule($ModulesToImport)
         }
+
         If ($PSBoundParameters['PSSnapinsToImport']) {
             ForEach ($PSSnapin in $PSSnapinsToImport) {
-                [void]$InitialSessionState.ImportPSSnapIn($PSSnapin,[ref]$Null)
+                [void]$InitialSessionState.ImportPSSnapIn($PSSnapin, [ref]$Null)
             }
         }
+
         If ($PSBoundParameters['FunctionsToImport']) {
             Write-Verbose "Loading custom functions: $($FunctionsToImport -join '; ')"
             ForEach ($Function in $FunctionsToImport) {
@@ -235,11 +249,42 @@ Function Start-RSJob {
 
                 #Check for an alias and add it as well
                 If ($Alias = Get-Alias | Where-Object { $_.Definition -eq $Function }) {
-                    $AliasEntry = New-Object System.Management.Automation.Runspaces.SessionStateAliasEntry -ArgumentList $Alias.Name,$Alias.Definition
+                    $AliasEntry = New-Object System.Management.Automation.Runspaces.SessionStateAliasEntry -ArgumentList $Alias.Name, $Alias.Definition
                     $InitialSessionState.Commands.Add($AliasEntry)
                 }
             }
         }
+
+        If ($PSBoundParameters['FunctionFilesToImport']) {
+            Write-Verbose "Loading custom function files : $($FunctionFilesToImport -join '; ')"
+            $functionsInFiles = GetFunctionByFile -FilePath $FunctionFilesToImport
+
+            if ($null -eq $functionsInFiles) {
+                Write-Warning "Cannot find any functions in given files"
+            }
+            else {
+                ForEach ($function in $functionsInFiles) {
+                    $functionName = $function.Name
+                    Write-Verbose "Loading custom function : $functionName"
+
+                    try {
+                        $functionDefinition = GetFunctionDefinitionByFunction -FunctionItem $function
+                        $SessionStateFunction = New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry -ArgumentList $functionName, $functionDefinition
+                        $InitialSessionState.Commands.Add($SessionStateFunction)
+                    }
+                    catch {
+                        Write-Warning "$($functionName): $($_.Exception.Message)"
+                    }
+
+                    #Check for an alias and add it as well
+                    if ($Alias = Get-Alias | Where-Object { $_.Definition -eq $Function }) {
+                        $AliasEntry = New-Object System.Management.Automation.Runspaces.SessionStateAliasEntry -ArgumentList $Alias.Name, $Alias.Definition
+                        $InitialSessionState.Commands.Add($AliasEntry)
+                    }
+                }
+            }
+        }
+
         If ($PSBoundParameters['VariablesToImport']) {
             Write-Verbose "Loading variables: $($VariablesToImport -join '; ')"
             $UserVariables = New-Object System.Collections.ArrayList
@@ -304,6 +349,7 @@ Function Start-RSJob {
         }
         Write-Debug "ListCount: $($List.Count)"
     }
+
     Process {
         Write-Debug "[PROCESS]"
         If ($PSBoundParameters.ContainsKey('InputObject')) {
@@ -312,6 +358,7 @@ Function Start-RSJob {
             $ForeachDetected = $false
         }
     }
+
     End {
         Write-Debug "[END]"
         $SBParamVars = @(GetParamVariable -ScriptBlock $ScriptBlock)
@@ -511,7 +558,7 @@ Function Start-RSJob {
             If ($UsingVariableValues.count -gt 0) {
                 For ($i=0;$i -lt $UsingVariableValues.count;$i++) {
                     Write-Verbose "Adding Param: $($UsingVariableValues[$i].Name) Value: $($UsingVariableValues[$i].Value)"
-                    [void]$PowerShell.AddParameter($UsingVariableValues[$i].NewVarName,$UsingVariableValues[$i].Value)
+                    [void]$PowerShell.AddParameter($UsingVariableValues[$i].NewVarName, $UsingVariableValues[$i].Value)
                 }
             }
             Write-Verbose "Checking for ArgumentList"
@@ -546,7 +593,7 @@ Function Start-RSJob {
                 Finished = $Handle.IsCompleted
                 Command  = $ScriptBlock.ToString()
                 RunspacePoolID = $RunSpacePoolID
-                Batch = $Batch
+                Batch          = $Batch
             }
 
             $RSPObject.LastActivity = Get-Date
