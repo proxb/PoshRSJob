@@ -29,7 +29,7 @@ param(
         "`n`tSTATUS: Testing with PowerShell $PSVersion`n"
 
         if ($PSVersionTable.PSVersion.Major -gt 2) {
-            Import-Module Pester -ErrorAction SilentlyContinue
+            #Import-Module Pester -ErrorAction SilentlyContinue
             Get-Module Pester | Select-Object -ExpandProperty Path | Set-Content -Path "$ProjectRoot\PesterPath.txt"
         }
 
