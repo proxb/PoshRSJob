@@ -32,12 +32,6 @@ param(
             Import-Module Pester -ErrorAction SilentlyContinue
             Get-Module Pester | Select-Object -ExpandProperty Path | Set-Content -Path "$ProjectRoot\PesterPath.txt"
         }
-        else {
-            $PesterPath = Get-Content -Path "$ProjectRoot\PesterPath.txt"
-            if ($PesterPath) {
-                Import-Module $PesterPath -ErrorAction SilentlyContinue
-            }
-        }
 
         Invoke-Pester @Verbose -Path "$ProjectRoot\Tests" -OutputFormat NUnitXml -OutputFile "$ProjectRoot\$TestFile" -PassThru |
             Export-Clixml -Path "$ProjectRoot\PesterResults_PS$PSVersion`_$Timestamp.xml"
