@@ -544,7 +544,7 @@ Function Start-RSJob {
         }
         ForEach ($Item in $List) {
             $ID = Increment
-            $PowerShell = [powershell]::Create().AddScript($NewScriptBlock)
+            $PowerShell = [powershell]::Create().AddScript($NewScriptBlock, $True)
             $PowerShell.RunspacePool = $RSPObject.RunspacePool
 
             if ($RealPipeline) {
