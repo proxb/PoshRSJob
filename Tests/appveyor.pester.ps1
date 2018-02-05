@@ -29,14 +29,8 @@ param(
         "`n`tSTATUS: Testing with PowerShell $PSVersion`n"
 
         if ($PSVersionTable.PSVersion.Major -gt 2) {
-            Import-Module Pester
+            #Import-Module Pester -ErrorAction SilentlyContinue
             Get-Module Pester | Select-Object -ExpandProperty Path | Set-Content -Path "$ProjectRoot\PesterPath.txt"
-        }
-        else {
-            $PesterPath = Get-Content -Path "$ProjectRoot\PesterPath.txt"
-            if ($PesterPath) {
-                Import-Module $PesterPath
-            }
         }
 
         Invoke-Pester @Verbose -Path "$ProjectRoot\Tests" -OutputFormat NUnitXml -OutputFile "$ProjectRoot\$TestFile" -PassThru |

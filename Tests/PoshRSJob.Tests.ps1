@@ -167,6 +167,33 @@ Describe "Start-RSJob PS$PSVersion" {
             $Output1.Count | Should be 1
             $Output5.Count | Should be 5
         }
+        InModuleScope PoshRSJob {
+            It 'should get first param list, 4 variables' {
+                $Output1 = @(GetParamVariable -ScriptBlock {
+                    [CmdletBinding()]
+                    #Comment
+                    Param($a = $b + $c,
+                    $d,
+                    [Parameter()]
+                    $e = [pscustomobject]@{
+                        a = $c
+                        b = invoke-command { $args } -argumentlist $b,$c,3
+                    },
+                    [ValidateScript({$_ -eq $c,$b})]
+                    $f)
+                    $a, $b, $c, $d, $e
+                    Invoke-Command { param($ip) $ip }
+                }) -join ''
+                $Output1 | Should Be 'adef'
+            }
+            It 'should not get internal param list' {
+                $Output1 = @(GetParamVariable -ScriptBlock {
+                    $a, $b, $c, $d, $e
+                    Invoke-Command { param($ip) $ip }
+                }).Count
+                $Output1 | Should Be 0
+            }
+        }
         It 'should support $using syntax' {
             $Test = "5"
             $Output1 = 1 | Start-RSJob @Verbose -ScriptBlock {
@@ -180,6 +207,36 @@ Describe "Start-RSJob PS$PSVersion" {
             } ) | Wait-RSJob | Receive-RSJob
             $Output1 | Should Be 1
         }
+        It 'should support FunctionFilesToImport syntax' {
+            $functionFile1 = Join-Path $env:TEMP ([GUID]::NewGuid()).Guid
+            $functionFile2 = Join-Path $env:TEMP ([GUID]::NewGuid()).Guid
+            "# test multi-lines scriptblock with comment
+            function f1 {
+                Write-Output 'r1'
+            }
+            function f2 {Write-Output 'r2'}" | Out-File $functionFile1
+            "function f3 {Write-Output 'r3'} function f4 {Write-Output 'r4'}" | Out-File $functionFile2
+            $Output = @(
+                Start-RSJob  @Verbose -ScriptBlock {
+                    f1
+                    f2
+                    f3
+                    f4
+                } -FunctionFilesToImport $functionFile1, $functionFile2 | Wait-RSJob | Receive-RSJob)
+            ($Output -join ',') | Should Be 'r1,r2,r3,r4'
+            Remove-Item $functionFile1, $functionFile2
+        }
+        It 'should support VariablesToImport syntax' {
+            $Output2 = @(
+                $tester0 = 'tester012'; $testvar1 = 'testvar124'; $testvar2 = 'testvar248'
+                Start-RSJob  @Verbose -ScriptBlock {
+                    $tester0
+                    $testvar1
+                    $testvar2
+                } -VariablesToImport tester0, testvar* | Wait-RSJob | Receive-RSJob)
+            ($Output2 -join ',') | Should Be 'tester012,testvar124,testvar248'
+        }
+
     }
 }
 
@@ -190,7 +247,8 @@ Describe "Get-RSJob PS$PSVersion" {
             $Output = @( Get-RSJob @Verbose )
             $Props = $Output[0].PSObject.Properties | Select-Object -ExpandProperty Name
 
-            $Output.count | Should be 10
+            # Write-Output $Output
+            $Output.count | Should be 12
             $Props -contains "Id" | Should be $True
             $Props -contains "State" | Should be $True
             $Props -contains "HasMoreData" | Should be $True

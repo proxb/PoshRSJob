@@ -3,7 +3,7 @@ Function FindFunction {
     [CmdletBinding()]
     param (
         [string]$ScriptBlock
-    )     
+    )
     #Just in case we have some oddness going on
     $ScriptBlock = $ScriptBlock -replace '`','``'
     # Tokenize the script
@@ -25,22 +25,22 @@ Function FindFunction {
         }
         if ($functionsearch) {
             If ($i -gt 1 -AND ($tokens[$i].StartLine -eq $tokens[$i-1].EndLine)) {
-                $SpaceCount = $tokens[$i].StartColumn - $tokens[$i-1].EndColumn            
+                $SpaceCount = $tokens[$i].StartColumn - $tokens[$i-1].EndColumn
                 $space = ' '*"$($SpaceCount)"
                 If ($SpaceCount -gt 0) {
                     If ($SpaceCount -notmatch '^[5|9]$') {
-                        Write-Verbose "Adding Space: $($SpaceCount)" 
+                        Write-Verbose "Adding Space: $($SpaceCount)"
                         [void]$Definition.Append($Space)
                     } ElseIf ($SpaceCount -match '^[5|9]$') {
-                        Write-Verbose "Adding NewLine" 
+                        Write-Verbose "Adding NewLine"
                         [void]$Definition.Append("`n")
                     }
                 }
             }
-            Write-Verbose $tokens[$i].Content 
+            Write-Verbose $tokens[$i].Content
             Switch ($tokens[$i].Type) {
                 'NewLine' {
-                    Write-Verbose 'Adding NewLine' 
+                    Write-Verbose 'Adding NewLine'
                     [void]$Definition.Append("`n")
                 }
                 'CommandArgument' {
@@ -71,17 +71,17 @@ Function FindFunction {
                     [void]$Definition.Append($tokens[$i].Content)
                 }
                 'Variable' {
-                    [void]$Definition.Append("`$$($tokens[$i].Content)")                      
+                    [void]$Definition.Append("`$$($tokens[$i].Content)")
                 }
                 'Type' {
                     Switch ($PSVersionTable.PSVersion.Major) {
                         '2' {
-                            [void]$Definition.Append("[$($tokens[$i].Content)]")                         
+                            [void]$Definition.Append("[$($tokens[$i].Content)]")
                         }
                         Default {
-                            [void]$Definition.Append($($tokens[$i].Content)) 
+                            [void]$Definition.Append($($tokens[$i].Content))
                         }
-                    }                                         
+                    }
                 }
                 Default {
                     [void]$Definition.Append($tokens[$i].Content)
