@@ -5,6 +5,7 @@
 * #48 Removed unnecessary Close() on runspacepool as Dispose() already in use
 * #157 (Start-RSJob - be able to import private functions)
 * #174 (Minor variable declaration)
+* Variables will now always use local scope in runspace by default; not global which prevents incorrect data being presented if a variable is created and not cleaned up in each runspace.
 
 ---------
 |1.7.3.11|
