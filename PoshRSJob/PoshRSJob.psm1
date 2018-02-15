@@ -199,10 +199,6 @@ $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
     $DisposePoshRS_RunspacePools=$False
     Do {
         #$ParentHost.ui.WriteVerboseLine("Beginning Do Statement")
-        If ($DisposePoshRS_RunspacePools) {
-            #Perform garbage collection
-            [gc]::Collect()
-        }
         $DisposePoshRS_RunspacePools=$False
         If ($PoshRS_RunspacePools.Count -gt 0) {
             #$ParentHost.ui.WriteVerboseLine("$($PoshRS_RunspacePools | Out-String)")
@@ -213,7 +209,6 @@ $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
                     If (($RunspacePool.AvailableJobs -eq $RunspacePool.MaxJobs) -AND $PoshRS_RunspacePools.LastActivity.Ticks -ne 0) {
                         If ((Get-Date).Ticks - $RunspacePool.LastActivity.Ticks -gt $PoshRS_RunspacePoolCleanup.Timeout) {
                             #Dispose of runspace pool
-                            $RunspacePool.RunspacePool.Close()
                             $RunspacePool.RunspacePool.Dispose()
                             $RunspacePool.CanDispose = $True
                             $DisposePoshRS_RunspacePools=$True
@@ -233,6 +228,8 @@ $PoshRS_RunspacePoolCleanup.PowerShell = [PowerShell]::Create().AddScript({
                     }
                     #Not setting this to silentlycontinue seems to cause another runspace to be created if an error occurs
                     Remove-Variable TempCollection -ErrorAction SilentlyContinue
+                    #Perform garbage collection
+                    [gc]::Collect()
                 }
             }
             finally {
