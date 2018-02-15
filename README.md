@@ -6,7 +6,7 @@ Provides an alternative to PSjobs with greater performance and less overhead to 
 
 ### Be sure to check out and contribute to the [Wiki](https://github.com/proxb/PoshRSJob/wiki)!
 
-#### Download and install PoshRSJob using PowerShell PSGet:
+#### Download and install PoshRSJob from the PowerShellGallery using PowerShell:
 ```PowerShell
 Install-Module -Name PoshRSJob
 ```
