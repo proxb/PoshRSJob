@@ -11,8 +11,8 @@ Provides an alternative to PSjobs with greater performance and less overhead to 
 Install-Module -Name PoshRSJob
 ```
 
-#### Download the latest release (1.7.4.2)
-https://github.com/proxb/PoshRSJob/releases/download/1.7.4.2/PoshRSJob.zip
+#### Download the latest release (1.7.4.3)
+https://github.com/proxb/PoshRSJob/releases/download/1.7.4.3/PoshRSJob.zip
 
 
 More information and examples here: http://learn-powershell.net/2015/04/19/latest-updates-to-poshrsjob/
