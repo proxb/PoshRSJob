@@ -115,6 +115,7 @@ New-Variable PoshRS_RunspacePoolCleanup -Value ([hashtable]::Synchronized(@{})) 
 Write-Verbose "Creating routine to monitor RS jobs"
 $PoshRS_jobCleanup.Flag=$True
 $PoshRS_jobCleanup.Host = $Host
+$PSModulePath = $env:PSModulePath
 $PoshRS_jobCleanup.Runspace =[runspacefactory]::CreateRunspace()
 $PoshRS_jobCleanup.Runspace.Open()
 $PoshRS_jobCleanup.Runspace.SessionStateProxy.SetVariable("PoshRS_jobCleanup",$PoshRS_jobCleanup)
@@ -320,3 +321,5 @@ $ExportModule = @{
 }
 Export-ModuleMember @ExportModule
 #endregion Export Module Members
+
+$env:PSModulePath = $PSModulePath

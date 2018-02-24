@@ -511,6 +511,7 @@ Function Start-RSJob {
             Else {
                 Write-Verbose "Creating new runspacepool <$Batch>"
                 $RunspacePoolID = $Batch
+                $PSModulePath = $env:PSModulePath
                 $RunspacePool = [runspacefactory]::CreateRunspacePool($InitialSessionState)
                 If ($RunspacePool.psobject.Properties["ApartmentState"]) {
                     #ApartmentState doesn't exist in Nano Server
@@ -530,6 +531,7 @@ Function Start-RSJob {
 
                 #[System.Threading.Monitor]::Enter($PoshRS_RunspacePools.syncroot) #Temp add
                 [void]$PoshRS_RunspacePools.Add($RSPObject)
+                $env:PSModulePath = $PSModulePath
             }
         }
         finally {

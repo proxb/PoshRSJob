@@ -1,4 +1,9 @@
 ---------
+|1.7.4.4|
+---------
+* #175 Save and restore $env:PSModulePath until we find why it's being clobbered on PS Core
+
+---------
 |1.7.4.3|
 ---------
 * #48 Moved garbage collection in runspacepool cleanup
