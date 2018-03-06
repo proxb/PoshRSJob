@@ -36,6 +36,11 @@ Function Start-RSJob {
         .PARAMETER ModulesToImport
             A collection of modules that will be imported into the background runspace job.
 
+        .PARAMETER ModulesFromPathToImport
+            This is the path containing modules that will be imported into the background runspace job. Must be a single
+            path (i.e. not a collection of paths) containing one or more modules organized in subdirectories. This is
+            available on PowerShell V3 and above.
+
         .PARAMETER PSSnapinsToImport
             A collection of PSSnapins that will be imported into the background runspace job.
 
@@ -180,6 +185,8 @@ Function Start-RSJob {
         [parameter()]
         [Alias('ModulesToLoad')]
         [string[]]$ModulesToImport,
+        [Alias('ModulesFromPathToLoad')]
+        [string]$ModulesFromPathToImport,
         [parameter()]
         [Alias('PSSnapinsToLoad')]
         [string[]]$PSSnapinsToImport,
@@ -225,6 +232,10 @@ Function Start-RSJob {
 
         If ($PSBoundParameters['ModulesToImport']) {
             [void]$InitialSessionState.ImportPSModule($ModulesToImport)
+        }
+
+        If ($PSBoundParameters['ModulesFromPathToImport']) {
+            [void]$InitialSessionState.ImportPSModulesFromPath($ModulesFromPathToImport)
         }
 
         If ($PSBoundParameters['PSSnapinsToImport']) {
