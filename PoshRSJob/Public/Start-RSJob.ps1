@@ -244,7 +244,7 @@ Function Start-RSJob {
             Write-Verbose "Resolving path of modules to import: $ModulesFromPathToImport"
             Try {
                 # Handle potential relative name and verify existence
-                $ModulePath = Resolve-Path -Path $ModulesFromPathToImport;
+                $ModulePath = Resolve-Path -Path $ModulesFromPathToImport -ErrorAction 'Stop';
                 Write-Verbose "Found full name for path of modules to import: $ModulePath"
             }
             Catch {
