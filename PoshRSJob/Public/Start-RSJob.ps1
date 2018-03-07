@@ -41,6 +41,8 @@ Function Start-RSJob {
             path (i.e. not a collection of paths) containing one or more modules organized in subdirectories. This is
             available on PowerShell V3 and above.
 
+            Either a full or relative path name is supported.
+
         .PARAMETER PSSnapinsToImport
             A collection of PSSnapins that will be imported into the background runspace job.
 
@@ -235,7 +237,22 @@ Function Start-RSJob {
         }
 
         If ($PSBoundParameters['ModulesFromPathToImport']) {
-            [void]$InitialSessionState.ImportPSModulesFromPath($ModulesFromPathToImport)
+            # InitialSessionState.ImportPSModulesFromPath() expects full name
+            # of the modules path, but we should handle both full and relative
+            # names
+            $ModulePath = $null;
+            Write-Verbose "Resolving path of modules to import: $ModulesFromPathToImport"
+            Try {
+                # Handle potential relative name and verify existence
+                $ModulePath = Resolve-Path -Path $ModulesFromPathToImport;
+                Write-Verbose "Found full name for path of modules to import: $ModulePath"
+            }
+            Catch {
+                Throw "Cannot find module path: $($_.Exception.Message)"
+            }
+            Write-Verbose "Adding modules from path to initial session state"
+            Write-Debug "Calling InitialSessionState.ImportPSModulesFromPath($ModulePath)"
+            [void]$InitialSessionState.ImportPSModulesFromPath($ModulePath)
         }
 
         If ($PSBoundParameters['PSSnapinsToImport']) {
