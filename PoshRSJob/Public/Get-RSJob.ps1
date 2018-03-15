@@ -102,7 +102,7 @@ Function Get-RSJob {
             $DebugPreference = 'Continue'
         }
         Write-Debug "ParameterSet: $($PSCmdlet.parametersetname)"
-        $Hash = @{}
+        $SearchProps = New-Object System.Collections.ArrayList
         $ResultJobs = New-Object System.Collections.ArrayList
     }
     Process {
@@ -112,14 +112,12 @@ Function Get-RSJob {
         if ($PSCmdlet.ParameterSetName -eq 'Job') {
             Write-Verbose "Adding Job $($PSBoundParameters[$Property].Id)"
             foreach ($v in $PSBoundParameters[$Property]) {
-                $Hash.Add($v.ID,1)
+               [void]$SearchProps.Add($v.ID)
             }
         }
         elseif ($PSCmdlet.ParameterSetName -ne 'All') {
             Write-Verbose "Adding $($PSBoundParameters[$Property])"
-            foreach ($v in $PSBoundParameters[$Property]) {
-                $Hash.Add($v,1)
-            }
+            $SearchProps.AddRange($PSBoundParameters[$Property])
         }
     }
     End {
@@ -128,16 +126,20 @@ Function Get-RSJob {
         $States = if ($PSBoundParameters.ContainsKey('State')) { '^' + ($State -join '$|^') + '$' } else { '.' }
 
         # IF faster than any scriptblocks
-        if ($PSCmdlet.ParameterSetName -eq 'All') {
-            Write-Verbose 'All Jobs'
+        if ($Property -eq 'All') {
+            Write-Verbose "Get all Jobs"
             $ResultJobs = $PoshRS_Jobs
         }
         else {
-            Write-Verbose "Filtered Jobs by $Property"
-            foreach ($job in $PoshRS_Jobs) {
-                if ($Hash.ContainsKey($job.$Property))
-                {
-                    [void]$ResultJobs.Add($job)
+            Write-Verbose "Jobs by $Property"
+            # And Hash much faster than foreach{ foreach {} } inner loop
+            $Hash = @{}
+            foreach ($jobobj in $PoshRS_Jobs) {
+                $Hash[$jobobj.$Property] = $jobobj
+            }
+            foreach ($prop in $SearchProps) {
+                if ($Hash.Contains($prop)) {
+                    [void]$ResultJobs.Add($Hash[$prop])
                 }
             }
         }
