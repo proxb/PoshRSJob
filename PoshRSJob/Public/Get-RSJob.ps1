@@ -125,31 +125,37 @@ Function Get-RSJob {
         if ($Property -eq 'Job') { $Property = 'ID' }
         $States = if ($PSBoundParameters.ContainsKey('State')) { '^' + ($State -join '$|^') + '$' } else { '.' }
 
+        [System.Threading.Monitor]::Enter($PoshRS_jobs.syncroot)
+        try {
         # IF faster than any scriptblocks
-        if ($Property -eq 'All') {
-            Write-Verbose "Get all Jobs"
-            $ResultJobs = $PoshRS_Jobs
-        }
-        else {
-            Write-Verbose "Jobs by $Property"
-            # And Hash much faster than foreach{ foreach {} } inner loop
-            $Hash = @{}
-            foreach ($jobobj in $PoshRS_Jobs) {
-                $Hash[$jobobj.$Property] = $jobobj
+            if ($Property -eq 'All') {
+                Write-Verbose "Get all Jobs"
+                $ResultJobs = $PoshRS_Jobs
             }
-            foreach ($prop in $SearchProps) {
-                if ($Hash.Contains($prop)) {
-                    [void]$ResultJobs.Add($Hash[$prop])
+            else {
+                Write-Verbose "Jobs by $Property"
+                # And Hash much faster than foreach{ foreach {} } inner loop
+                $Hash = @{}
+                foreach ($jobobj in $PoshRS_Jobs) {
+                    $Hash[$jobobj.$Property] = $jobobj
+                }
+                foreach ($prop in $SearchProps) {
+                    if ($Hash.Contains($prop)) {
+                        [void]$ResultJobs.Add($Hash[$prop])
+                    }
+                }
+            }
+            foreach ($job in $ResultJobs) {
+                if (($job.State -match $States) -and
+                    (-not $PSBoundParameters.ContainsKey('HasMoreData') -or $job.HasMoreData -eq $HasMoreData)
+                   )
+                {
+                    $job
                 }
             }
         }
-        foreach ($job in $ResultJobs) {
-            if (($job.State -match $States) -and
-                (-not $PSBoundParameters.ContainsKey('HasMoreData') -or $job.HasMoreData -eq $HasMoreData)
-               )
-            {
-                $job
-            }
+        finally {
+            [System.Threading.Monitor]::Exit($PoshRS_jobs.syncroot)
         }
     }
 }
