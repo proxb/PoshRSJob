@@ -34,7 +34,11 @@ Function Start-RSJob {
             Number of concurrent running runspace jobs which are allowed at a time.
 
         .PARAMETER ModulesToImport
-            A collection of modules that will be imported into the background runspace job.
+            A collection of modules that will be imported into the background runspace job. Collection can include:
+
+            - Name of an installed module
+            - Path (either full or relative) containing one or more modules
+            - Path (either full or relative) to a module manifest, script module, or binary module file
 
         .PARAMETER PSSnapinsToImport
             A collection of PSSnapins that will be imported into the background runspace job.
@@ -224,7 +228,39 @@ Function Start-RSJob {
         $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
 
         If ($PSBoundParameters['ModulesToImport']) {
-            [void]$InitialSessionState.ImportPSModule($ModulesToImport)
+            # Import module(s) by name, path, or single path from which all
+            # modules need to be imported
+            Write-Verbose "Importing modules: $($ModulesToImport -join '; ')"
+            ForEach ($Module in $ModulesToImport) {
+                Write-Verbose "Resolving module: $Module"
+                Try {
+                    # This helps determine how to import (by path or name)
+                    # and handles potentially relative path
+                    $ModulePath = Resolve-Path -Path $Module -ErrorAction Stop
+                    # Strip trailing slash for ImportPSModulesFromPath
+                    # compatibility
+                    $ModulePath = $ModulePath.Path.TrimEnd('\')
+                    Write-Verbose "Found module(s) path to import: $ModulePath"
+                }
+                Catch {
+                    # Assume it's the name of an installed module
+                    Write-Verbose "Importing module by name: $Module"
+                    Write-Debug "Calling InitialSessionState.ImportPSModule($Module)"
+                    [void]$InitialSessionState.ImportPSModule($Module);
+                }
+                If (Test-Path -Path $ModulePath -PathType Container) {
+                    # It's a path containing one or more modules
+                    Write-Verbose "Importing module(s) by path: $ModulePath"
+                    Write-Debug "Calling InitialSessionState.ImportPSModulesFromPath($ModulePath)"
+                    [void]$InitialSessionState.ImportPSModulesFromPath($ModulePath);
+                }
+                Else {
+                    # It's a module manifest, script, or binary file
+                    Write-Verbose "Found module file to import: $ModulePath"
+                    Write-Verbose "Calling InitialSessionState.ImportPSModule($ModulePath)"
+                    [void]$InitialSessionState.ImportPSModule($ModulePath);
+                }
+            }
         }
 
         If ($PSBoundParameters['PSSnapinsToImport']) {
