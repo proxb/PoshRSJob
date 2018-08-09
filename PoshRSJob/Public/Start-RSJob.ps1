@@ -570,7 +570,13 @@ Function Start-RSJob {
 #            }
 #            else {
                 ForEach ($Argument in $ArgumentList) {
-                    Write-Verbose "Adding Argument: $($Argument) <$($Argument.GetType().Fullname)>"
+                    if ($null -eq $Argument) {
+                        Write-Verbose "Adding Argument: $($Argument) <NULL>"
+                    }
+                    else {
+                        Write-Verbose "Adding Argument: $($Argument) <$($Argument.GetType().Fullname)>"
+                    }
+
                     [void]$PowerShell.AddArgument($Argument)
                 }
 #            }
