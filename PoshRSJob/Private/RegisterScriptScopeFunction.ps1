@@ -1,4 +1,4 @@
-﻿Function RegisterScriptScopeFunction {
+Function RegisterScriptScopeFunction {
     [cmdletbinding()]
     Param (
         [parameter()]

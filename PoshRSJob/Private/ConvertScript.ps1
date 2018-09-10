@@ -1,4 +1,4 @@
-﻿Function ConvertScript {
+Function ConvertScript {
     Param (
         [scriptblock]$ScriptBlock,
         [bool]$HasParam,

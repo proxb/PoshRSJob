@@ -1,4 +1,4 @@
-﻿Function GetUsingVariablesV2 {
+Function GetUsingVariablesV2 {
     Param ([scriptblock]$ScriptBlock)
     $errors = [System.Management.Automation.PSParseError[]] @()
     $Results = [Management.Automation.PsParser]::Tokenize($ScriptBlock.tostring(), [ref] $errors)

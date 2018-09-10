@@ -1,4 +1,4 @@
-﻿#region Custom Argument Completors
+#region Custom Argument Completors
 #Global variables are required for this functionality (Invoke-ScriptAnalyzer)
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidGlobalVars", "global:options")]
 param()
