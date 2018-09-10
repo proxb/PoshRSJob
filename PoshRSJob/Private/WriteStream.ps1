@@ -1,4 +1,4 @@
-﻿Function WriteStream {
+Function WriteStream {
     [CmdletBinding()]
     Param (
         [Parameter(ValueFromPipeline=$true)]

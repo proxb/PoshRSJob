@@ -1,4 +1,4 @@
-﻿Function GetParamVariable {
+Function GetParamVariable {
     [CmdletBinding()]
     param (
         [scriptblock]$ScriptBlock

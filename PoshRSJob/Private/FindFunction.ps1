@@ -1,4 +1,4 @@
-﻿#Helper function
+#Helper function
 Function FindFunction {
     [CmdletBinding()]
     param (

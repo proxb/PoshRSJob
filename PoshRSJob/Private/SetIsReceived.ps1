@@ -1,4 +1,4 @@
-﻿Function SetIsReceived {
+Function SetIsReceived {
     Param (
         [parameter(ValueFromPipeline=$True)]
         [rsjob]$RSJob,

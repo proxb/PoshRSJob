@@ -14,8 +14,10 @@ if($env:APPVEYOR_REPO_BRANCH -and $env:APPVEYOR_REPO_BRANCH -notlike "master" -o
 
 Import-Module $PSScriptRoot\..\PoshRSJob\PoshRSJob -Verbose -Force -ErrorAction SilentlyContinue
 
+if (!(Test-Path Variable:PSVersion)) {
+    $PSVersion = $PSVersionTable.PSVersion.Major
+}
 <#
-$PSVersion = $PSVersionTable.PSVersion.Major
 Switch ($PSVersion) {
     4 {Import-Module $PSScriptRoot\..\PoshRSJob\PoshRSJob -Force -ErrorAction SilentlyContinue}
     2 {Import-Module PoshRSJob -Force -ErrorAction SilentlyContinue}
@@ -289,8 +291,8 @@ Describe "Get-RSJob PS$PSVersion" {
             }
 
             $Output.Count | Should be 1
-			$Output[0] -is 'RSJob' | Should be $true
-			$Output[0].Name | Should be "TestJob $Case"
+            $Output[0] -is 'RSJob' | Should be $true
+            $Output[0].Name | Should be "TestJob $Case"
         }
     }
 }
@@ -443,7 +445,7 @@ Describe "Remove-RSJob PS$PSVersion" {
             $TestJobs.Count -gt 0 | Should Be $True
 
             $TestJob = $TestJobs | Where-Object { $_.Name -eq "TestJob $Case" }
-			$TestJob -is 'RSJob' | Should be $true
+            $TestJob -is 'RSJob' | Should be $true
 
             $AllIDs = @( $TestJobs | Select-Object -ExpandProperty Id )
 
@@ -477,15 +479,15 @@ Describe "Remove-RSJob PS$PSVersion" {
             $TestJob = 1 | Start-RSJob -Name 'ByForce' -ScriptBlock {
                 While ($True) {$Null}
             }
-			$TestJob -is 'RSJob' | Should be $true
+            $TestJob -is 'RSJob' | Should be $true
             { Remove-RSJob $TestJob -ErrorAction Stop } | Should Throw
         }
         It 'should remove job by force' {
             $TestJob = Get-RSJob -Name 'ByForce'
-			$TestJob -is 'RSJob' | Should be $true
+            $TestJob -is 'RSJob' | Should be $true
             { Remove-RSJob $TestJob -Force } | Should Not Throw
             $TestJob = Get-RSJob -Name 'ByForce'
-			$TestJob | Should BeNullOrEmpty
+            $TestJob | Should BeNullOrEmpty
         }
         It 'should remove all jobs' {
             Get-RSJob @Verbose | Remove-RSJob @Verbose
