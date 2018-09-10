@@ -14,8 +14,10 @@ if($env:APPVEYOR_REPO_BRANCH -and $env:APPVEYOR_REPO_BRANCH -notlike "master" -o
 
 Import-Module $PSScriptRoot\..\PoshRSJob\PoshRSJob -Verbose -Force -ErrorAction SilentlyContinue
 
+if (!(Test-Path Variable:PSVersion)) {
+    $PSVersion = $PSVersionTable.PSVersion.Major
+}
 <#
-$PSVersion = $PSVersionTable.PSVersion.Major
 Switch ($PSVersion) {
     4 {Import-Module $PSScriptRoot\..\PoshRSJob\PoshRSJob -Force -ErrorAction SilentlyContinue}
     2 {Import-Module PoshRSJob -Force -ErrorAction SilentlyContinue}
