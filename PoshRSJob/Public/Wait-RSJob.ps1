@@ -41,6 +41,14 @@ Function Wait-RSJob {
 
         .PARAMETER ShowProgress
             Displays a progress bar
+            
+        .PARAMETER ProgressBarTitle
+            When ShowProgress is set to $True, defines the title of the displayed Progress Bar.
+            Default Value: "RSJobs Tracker"
+            
+        .PARAMETER ProgressBarMessage 
+            When ShowProgress is set to $True, defines the message of the displayed Progress Bar.
+            Default Value: "Remaining Jobs"
 
         .NOTES
             Name: Wait-RSJob
@@ -81,12 +89,35 @@ Function Wait-RSJob {
         [ValidateSet('NotStarted','Running','Completed','Failed','Stopping','Stopped','Disconnected')]
         [string[]]$State,
         [int]$Timeout,
-        [switch]$ShowProgress
+        [Boolean]$ShowProgress = $false,
+        
+        [parameter(ParameterSetName='Batch')]
+        [parameter(ParameterSetName='Name')]
+        [parameter(ParameterSetName='Id')]
+        [parameter(ParameterSetName='InstanceID')]
+        [parameter(ParameterSetName='All')]
+        [String]$ProgressBarTitle = "RSJobs Tracker",
+        
+        
+        [parameter(ParameterSetName='Batch')]
+        [parameter(ParameterSetName='Name')]
+        [parameter(ParameterSetName='Id')]
+        [parameter(ParameterSetName='InstanceID')]
+        [parameter(ParameterSetName='All')]
+        [String]$ProgressBarMessage = "Remaining Jobs"
     )
     Begin {
         If ($PSBoundParameters['Debug']) {
             $DebugPreference = 'Continue'
         }
+        
+        if([String]::isNullOrEmpty($ProgressBarTitle)) {
+            $ProgressBarTitle = "RSJobs Tracker"
+        }
+        if([String]::isNullOrEmpty($ProgressBarMessage)) {
+            $ProgressBarMessage = "Remaining Jobs"
+        }
+        
         $List = New-Object System.Collections.ArrayList
     }
     Process {
@@ -132,14 +163,14 @@ Function Wait-RSJob {
             Write-Debug "Total: ($Totaljobs)"
             Write-Debug "Status: $($Completed/$TotalJobs)"
             If ($ShowProgress) {
-                Write-Progress -Activity "RSJobs Tracker" -Status ("Remaining Jobs: {0}" -f $Waitjobs.Count) -PercentComplete (($Completed/$TotalJobs)*100)
+                Write-Progress -Activity $ProgressBarTitle -Status ("${ProgressBarMessage}: {0}" -f $Waitjobs.Count) -PercentComplete (($Completed/$TotalJobs)*100)
             }
             if($Timeout -and (New-Timespan $Date).TotalSeconds -ge $Timeout){
                 break
             }
         }
         If ($ShowProgress) {
-            Write-Progress -Activity "RSJobs Tracker" -Completed
+            Write-Progress -Activity $ProgressBarTitle -Completed
         }
     }
 }
