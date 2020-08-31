@@ -41,6 +41,14 @@ Function Wait-RSJob {
 
         .PARAMETER ShowProgress
             Displays a progress bar
+            
+        .PARAMETER ProgressBarTitle
+            When ShowProgress is set to $True, defines the title of the displayed Progress Bar.
+            Default Value: "RSJobs Tracker"
+            
+        .PARAMETER ProgressBarMessage 
+            When ShowProgress is set to $True, defines the message of the displayed Progress Bar.
+            Default Value: "Remaining Jobs"
 
         .NOTES
             Name: Wait-RSJob
